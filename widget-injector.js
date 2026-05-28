@@ -85,7 +85,7 @@
 
   // 4. Create iframe referencing the deployed AI Voice Agent on GitHub Pages
   var iframe = document.createElement('iframe');
-  iframe.src = 'https://decemberdaycoffeemkt-cell.github.io/DDC-Voice/';
+  iframe.src = 'https://decemberdaycoffeemkt-cell.github.io/DDC-Voice/?widget=true';
   iframe.style.width = '100%';
   iframe.style.height = '100%';
   iframe.style.border = 'none';

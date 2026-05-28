@@ -144,60 +144,86 @@ export default function PhoneCallSimulator({
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Thai text to speech with cute, natural, premium voice options
-  const speakThai = (text: string) => {
-    if (!enableVoiceOut || !("speechSynthesis" in window)) return;
+  // Thai text to speech with cute, natural, premium voice options (ElevenLabs with browser fallback)
+  const speakThai = async (text: string) => {
+    if (!enableVoiceOut) return;
+    
+    // Clean emojis to make speech cleaner
+    const cleanText = text.replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD00-\uDFFF]/g, "");
+
     try {
-      window.speechSynthesis.cancel();
-      // Remove metadata emojis and symbols to make speech clean
-      const cleanText = text.replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD00-\uDFFF]/g, "");
-      const utterance = new SpeechSynthesisUtterance(cleanText);
+      // 1. Try calling the ElevenLabs TTS API endpoint
+      const response = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: cleanText })
+      });
+
+      if (!response.ok) {
+        throw new Error("ElevenLabs endpoint returned error or API key not set, falling back to native TTS");
+      }
+
+      const blob = await response.blob();
+      const audioUrl = URL.createObjectURL(blob);
       
-      let voices = window.speechSynthesis.getVoices();
-      if (voices.length === 0) {
-        // Retry once in case of delay
-        voices = window.speechSynthesis.getVoices();
+      // Cancel any ongoing window speech synthesis first
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
       }
       
-      // Filter Thai voices
-      const thVoices = voices.filter(v => v.lang.toLowerCase().includes("th") || v.lang.toLowerCase() === "th-th");
-      
-      // Prioritize premium/online/google voices over offline ones for a much more natural, high-fidelity experience
-      let thVoice = null;
-      if (thVoices.length > 0) {
-        // 1. Natural or Online premium voice (e.g. Microsoft Pattara Online (Natural))
-        thVoice = thVoices.find(v => v.name.toLowerCase().includes("natural") || v.name.toLowerCase().includes("online"));
-        // 2. Google high quality online voice
-        if (!thVoice) {
-          thVoice = thVoices.find(v => v.name.toLowerCase().includes("google"));
-        }
-        // 3. Fallback to first available Thai voice
-        if (!thVoice) {
-          thVoice = thVoices[0];
-        }
+      // Stop currently playing voice audio if there is one
+      if ((window as any).currentTtsAudio) {
+        try {
+          (window as any).currentTtsAudio.pause();
+          (window as any).currentTtsAudio.src = "";
+        } catch(e) {}
       }
+
+      const audio = new Audio(audioUrl);
+      (window as any).currentTtsAudio = audio;
+      audio.play();
       
-      if (thVoice) {
-        utterance.voice = thVoice;
-        utterance.lang = thVoice.lang;
-      } else {
-        utterance.lang = "th-TH";
-      }
-      
-      // Dynamic voice settings to enhance aesthetics (pitch & rate) to sound sweet, cute, and friendly
-      if (gender === "female") {
-        // Nong Thanwa is sweet and slightly higher pitched for cute, premium vibes
-        utterance.pitch = 1.15; // Raised pitch makes the voice sound younger, sweeter, and cute!
-        utterance.rate = 1.02;  // Natural flow rate
-      } else {
-        // P' Phu is a warm, polite gentleman
-        utterance.pitch = 0.98;
-        utterance.rate = 1.05;
-      }
-      
-      window.speechSynthesis.speak(utterance);
     } catch (e) {
-      console.warn("Speech synthesis error", e);
+      console.warn("ElevenLabs TTS failed or API key not configured, falling back to native TTS:", e);
+      
+      // 2. Graceful Fallback: Browser Native Speech Synthesis
+      if (!("speechSynthesis" in window)) return;
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        
+        let voices = window.speechSynthesis.getVoices();
+        if (voices.length === 0) {
+          voices = window.speechSynthesis.getVoices();
+        }
+        
+        const thVoices = voices.filter(v => v.lang.toLowerCase().includes("th") || v.lang.toLowerCase() === "th-th");
+        let thVoice = null;
+        if (thVoices.length > 0) {
+          thVoice = thVoices.find(v => v.name.toLowerCase().includes("natural") || v.name.toLowerCase().includes("online"));
+          if (!thVoice) {
+            thVoice = thVoices.find(v => v.name.toLowerCase().includes("google"));
+          }
+          if (!thVoice) {
+            thVoice = thVoices[0];
+          }
+        }
+        
+        if (thVoice) {
+          utterance.voice = thVoice;
+          utterance.lang = thVoice.lang;
+        } else {
+          utterance.lang = "th-TH";
+        }
+        
+        // Nong Thanwa is sweet and slightly higher pitched for cute, premium vibes
+        utterance.pitch = 1.15; // Sweet high pitched anime vibes
+        utterance.rate = 1.02;  // Natural flow rate
+        
+        window.speechSynthesis.speak(utterance);
+      } catch (nativeErr) {
+        console.warn("Native TTS fallback also failed:", nativeErr);
+      }
     }
   };
 

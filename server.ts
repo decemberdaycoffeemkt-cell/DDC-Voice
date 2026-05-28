@@ -155,7 +155,30 @@ app.post("/api/chat", async (req, res) => {
       const hasPhone = /0\d{1,2}-?\d{3}-?\d{4}|0\d{8,9}/.test(lastMessage);
       const wantsStaff = /คุยกับคน|ขอสาย|พนักงาน|เจ้าหน้าที่|คุยกับมนุษย์|โอนสาย|สายตรง|ต่อสาย/.test(lastMessage);
       const isIssue = /พัง|เสีย|ใช้ไม่ได้|น้ำไม่ไหล|ร้อน|รั่ว|ชำรุด|ขัดข้อง/.test(lastMessage);
-      const isCoffeeQuery = /เมล็ดกาแฟ|ราคาส่ง|ราคา|เมล็ด|กาแฟ|โปรโมชั่น|ส่วนลด|ค้าส่ง|วัตถุดิบ|ผงชง/.test(lastMessage);
+      
+      // Dynamic Product search using Thai space-stripped substring algorithm
+      const cleanQuery = lastMessage.toLowerCase().replace(/[\s\-_()]/g, "");
+      const matched = PRODUCTS.filter(p => {
+        const id = p.id.toLowerCase();
+        const name = p.name.toLowerCase();
+        const cleanId = id.replace(/[\s\-_()]/g, "");
+        const cleanName = name.replace(/[\s\-_()]/g, "");
+        
+        if (cleanQuery.includes(cleanId) || cleanQuery.includes(cleanName) || cleanId.includes(cleanQuery) || cleanName.includes(cleanQuery)) {
+          return true;
+        }
+        
+        const parts = id.split("-");
+        if (parts.length > 0) {
+          const shortCode = parts[0];
+          if (shortCode.length >= 2 && cleanQuery.includes(shortCode)) {
+            return true;
+          }
+        }
+        return false;
+      });
+
+      const isCoffeeQuery = matched.length > 0 || /เมล็ดกาแฟ|ราคาส่ง|ราคา|เมล็ด|กาแฟ|โปรโมชั่น|ส่วนลด|ค้าส่ง|วัตถุดิบ|ผงชง/.test(lastMessage);
       
       const replyTheme = "ค่ะ";
       const agentName = "น้องธันวา";
@@ -182,7 +205,13 @@ app.post("/api/chat", async (req, res) => {
           shouldTransfer = true;
           targetDept = "sales";
         } else {
-          replyText = `เรามีเมล็ดกาแฟราคาส่งยอดนิยม เช่น S5 Premium Dark สำหรับกาแฟนมรสเข้มข้น และ Colombia Peach Candy หอมหวานพีชฟุ้งๆ ค่ะ รบกวนแอดไลน์ขอตารางราคายกลังที่ Line OA: @decemberdaycoffee (https://lin.ee/Qqn7rkn) หรือจะให้ฝ่ายขายติดต่อกลับ แจ้งชื่อและเบอร์โทรไว้ได้เลยนะคะ`;
+          if (matched.length > 0) {
+            const mainProduct = matched[0];
+            const shortDesc = mainProduct.description.split(" (จุดเด่น")[0].split(". เหมาะสำหรับ")[0];
+            replyText = `สำหรับข้อมูลที่คุณลูกค้าสนใจของตัว ${mainProduct.name} โทนจะเน้นไปที่ ${shortDesc} ค่ะ โดยราคารายถุงเริ่มต้นเพียง ${mainProduct.price} นะคะ แนะนำสั่งซื้อสะดวกรวดเร็วบนเว็บหลัก หรือแอดไลน์ขอตารางราคาขายส่งยกลังสุดคุ้มได้ที่ Line OA: @decemberdaycoffee (https://lin.ee/Qqn7rkn) หรือหากสะดวกให้ฝ่ายขายโทรติดต่อกลับโดยตรงเพื่อจัดส่งตัวอย่างหรือเปิดบิลด่วน สามารถแจ้งเบอร์โทรทิ้งไว้ได้เลยค่ะ เดี๋ยวน้องธันวาจัดเตรียมประสานให้ทันทีเลยนะคะ`;
+          } else {
+            replyText = `เรามีเมล็ดกาแฟราคาส่งยอดนิยม เช่น S5 Premium Dark สำหรับกาแฟนมรสเข้มข้น และ Colombia Peach Candy หอมหวานพีชฟุ้งๆ ค่ะ รบกวนแอดไลน์ขอตารางราคายกลังที่ Line OA: @decemberdaycoffee (https://lin.ee/Qqn7rkn) หรือจะให้ฝ่ายขายติดต่อกลับ แจ้งชื่อและเบอร์โทรไว้ได้เลยนะคะ`;
+          }
         }
       } else if (/สวัสดี|ดีครับ|ดีค่ะ|ฮัลโหล/.test(lastMessage)) {
         replyText = `สวัสดีค่ะ! น้องธันวา ยินดีต้อนรับสู่ December Day Coffee ค่ะ วันนี้สนใจเมล็ดกาแฟคั่ว หรือต้องการแจ้งเรื่องดูแลเครื่องชงกาแฟดีคะ?`;

@@ -5,6 +5,7 @@ import {
   Sparkles, ShieldAlert, ArrowRight, RefreshCw, HelpCircle, User, Cpu
 } from "lucide-react";
 import { ChatMessage, ExtractedSupportInfo, CallState } from "../types";
+import { PRODUCTS } from "../data";
 
 interface PhoneCallSimulatorProps {
   gender: "female" | "male";
@@ -49,53 +50,68 @@ const simulateLocalResponse = (inputText: string, gender: "female" | "male") => 
   const hasPhone = /0\d{1,2}-?\d{3}-?\d{4}|0\d{8,9}/.test(lastMessage);
   const wantsStaff = /คุยกับคน|ขอสาย|พนักงาน|เจ้าหน้าที่|คุยกับมนุษย์|โอนสาย|สายตรง|ต่อสาย/.test(lastMessage);
   const isIssue = /พัง|เสีย|ใช้ไม่ได้|น้ำไม่ไหล|ร้อน|รั่ว|ชำรุด|ขัดข้อง|ซ่อม/.test(lastMessage);
-  const isCoffeeQuery = /เมล็ดกาแฟ|ราคาส่ง|ราคา|เมล็ด|กาแฟ|โปรโมชั่น|ส่วนลด|ค้าส่ง|วัตถุดิบ|ผงชง/.test(lastMessage);
   
-  const replyTheme = gender === "female" ? "ค่ะ" : "ครับ";
-  const agentName = gender === "female" ? "น้องธันวา" : "พี่ภู";
+  // Dynamic Product search using Thai space-stripped substring algorithm
+  const cleanQuery = lastMessage.toLowerCase().replace(/[\s\-_()]/g, "");
+  const matched = PRODUCTS.filter(p => {
+    const id = p.id.toLowerCase();
+    const name = p.name.toLowerCase();
+    const cleanId = id.replace(/[\s\-_()]/g, "");
+    const cleanName = name.replace(/[\s\-_()]/g, "");
+    
+    if (cleanQuery.includes(cleanId) || cleanQuery.includes(cleanName) || cleanId.includes(cleanQuery) || cleanName.includes(cleanQuery)) {
+      return true;
+    }
+    
+    const parts = id.split("-");
+    if (parts.length > 0) {
+      const shortCode = parts[0];
+      if (shortCode.length >= 2 && cleanQuery.includes(shortCode)) {
+        return true;
+      }
+    }
+    return false;
+  });
+
+  const isCoffeeQuery = matched.length > 0 || /เมล็ดกาแฟ|ราคาส่ง|ราคา|เมล็ด|กาแฟ|โปรโมชั่น|ส่วนลด|ค้าส่ง|วัตถุดิบ|ผงชง/.test(lastMessage);
   
-  let replyText = `สวัสดี${replyTheme} ${agentName} ยินดีให้บริการค่ะ/ครับ หากสนใจเมล็ดกาแฟราคาส่ง หรือแจ้งปัญหาแจ้งได้เลยนะคะ/ครับ`;
+  const replyTheme = "ค่ะ";
+  const agentName = "น้องธันวา";
+  
+  let replyText = `สวัสดีค่ะ น้องธันวา ยินดีให้บริการค่ะ หากสนใจเมล็ดกาแฟราคาส่ง หรือแจ้งปัญหาแจ้งได้เลยนะคะ`;
   let transferTriggered = false;
   let transferDepartment = "none";
   
   if (wantsStaff) {
-    replyText = gender === "female"
-      ? `รับทราบและเข้าใจแล้วค่ะ เดี๋ยวน้องธันวาขอกดโอนสายไปยังคุณขวัญที่เบอร์ 096-163-1456 เพื่อดูแลให้ด่วนเลยนะคะ กรุณารอสักครู่เดียวค่ะ`
-      : `รับทราบและเข้าใจแล้วครับ เดี๋ยวพี่ภูขอกดโอนสายไปยังคุณขวัญที่เบอร์ 096-163-1456 เพื่อดูแลให้ด่วนเลยครับ กรุณารอสักครู่เดียวครับ`;
+    replyText = `รับทราบและเข้าใจแล้วค่ะ เดี๋ยวน้องธันวาขอกดโอนสายไปยังคุณขวัญที่เบอร์ 096-163-1456 เพื่อดูแลให้ด่วนเลยนะคะ กรุณารอสักครู่เดียวค่ะ`;
     transferTriggered = true;
     transferDepartment = "sales";
   } else if (isIssue) {
     if (hasPhone) {
-      replyText = gender === "female"
-        ? `ได้รับเบอร์ติดต่อและรับเรื่องเรียบร้อยค่ะ เดี๋ยวน้องธันวาขอกดโอนสายไปแจ้งทีมช่างเทคนิคเพื่อติดต่อกลับและเข้าไปดูแลด่วนที่สุดเลยนะคะ กรุณารอสักครู่ค่ะ`
-        : `ได้รับเบอร์ติดต่อและรับเรื่องเรียบร้อยครับ เดี๋ยวพี่ภูขอกดโอนสายไปแจ้งทีมช่างเทคนิคเพื่อติดต่อกลับและเข้าไปดูแลด่วนที่สุดเลยครับ กรุณารอสักครู่ครับ`;
+      replyText = `ได้รับเบอร์ติดต่อและรับเรื่องเรียบร้อยค่ะ เดี๋ยวน้องธันวาขอกดโอนสายไปแจ้งทีมช่างเทคนิคเพื่อติดต่อกลับและเข้าไปดูแลด่วนที่สุดเลยนะคะ กรุณารอสักครู่ค่ะ`;
       transferTriggered = true;
       transferDepartment = "technician";
     } else {
-      replyText = gender === "female"
-        ? `อุ๊ย ต้องขอประทานโทษด้วยนะคะที่เครื่องขัดข้อง ทางเรามีบริการซ่อมเครื่องชง เครื่องบด และเครื่องปั่นครบวงจร พร้อมล้างตะกรันและเปลี่ยนยางโอริงหัวชงค่ะ สามารถแอดไลน์แจ้งโดยตรงที่ @decservice (ลิงก์: https://lin.ee/WXYf27n) หรือฝากเบอร์โทรติดต่อกลับไว้ เดี๋ยวน้องธันวาประสานงานช่างติดต่อกลับด่วนเลยค่ะ`
-        : `อุ๊ย ต้องขอประทานโทษด้วยครับที่เครื่องขัดข้อง ทางเรามีบริการซ่อมเครื่องชง เครื่องบด และเครื่องปั่นครบวงจร พร้อมล้างตะกรันและเปลี่ยนยางโอริงหัวชงครับ สามารถแอดไลน์แจ้งโดยตรงที่ @decservice (ลิงก์: https://lin.ee/WXYf27n) หรือฝากเบอร์โทรติดต่อกลับไว้ เดี๋ยวพี่ภูประสานงานช่างติดต่อกลับด่วนเลยครับ`;
+      replyText = `อุ๊ย ต้องขอประทานโทษด้วยนะคะที่เครื่องขัดข้อง ทางเรามีบริการซ่อมเครื่องชง เครื่องบด และเครื่องปั่นครบวงจร พร้อมล้างตะกรันและเปลี่ยนยางโอริงหัวชงค่ะ สามารถแอดไลน์แจ้งโดยตรงที่ @decservice (ลิงก์: https://lin.ee/WXYf27n) หรือฝากเบอร์โทรติดต่อกลับไว้ เดี๋ยวน้องธันวาประสานงานช่างติดต่อกลับด่วนเลยค่ะ`;
     }
   } else if (isCoffeeQuery) {
     if (hasPhone) {
-      replyText = gender === "female"
-        ? `ได้รับเบอร์ติดต่อเรียบร้อยค่ะ เดี๋ยวน้องธันวารีบประสานงานฝ่ายขายโทรกลับเพื่อจัดทำใบเสนอราคาเรตราคาส่งยกลังพิเศษและส่งตารางราคาให้ทันทีเลยนะคะ รอสักครู่ค่ะ`
-        : `ได้รับเบอร์ติดต่อเรียบร้อยครับ เดี๋ยวพี่ภูรีบประสานงานฝ่ายขายโทรกลับเพื่อจัดทำใบเสนอราคาเรตราคาส่งยกลังพิเศษและส่งตารางราคาให้ทันทีเลยครับ รอสักครู่ครับ`;
+      replyText = `ได้รับเบอร์ติดต่อเรียบร้อยค่ะ เดี๋ยวน้องธันวารีบประสานงานฝ่ายขายโทรกลับเพื่อจัดทำใบเสนอราคาเรตราคาส่งยกลังพิเศษและส่งตารางราคาให้ทันทีเลยนะคะ รอสักครู่ค่ะ`;
       transferTriggered = true;
       transferDepartment = "sales";
     } else {
-      replyText = gender === "female"
-        ? `เรามีเมล็ดกาแฟราคาส่งยอดนิยม เช่น S5 Premium Dark และ Colombia Peach Candy ค่ะ สั่งซื้อสะดวกบนเว็บที่ https://www.decemberdaycoffee.com หรือแอดไลน์ขอตารางราคาได้ที่ @decemberdaycoffee หรือหากสะดวกให้ฝ่ายขายโทรกลับ แจ้งชื่อและเบอร์โทรทิ้งไว้ได้เลยนะคะ`
-        : `เรามีเมล็ดกาแฟราคาส่งยอดนิยม เช่น S5 Premium Dark และ Colombia Peach Candy ครับ สั่งซื้อสะดวกบนเว็บที่ https://www.decemberdaycoffee.com หรือแอดไลน์ขอตารางราคาได้ที่ @decemberdaycoffee หรือหากสะดวกให้ฝ่ายขายโทรกลับ แจ้งชื่อและเบอร์โทรทิ้งไว้ได้เลยครับ`;
+      if (matched.length > 0) {
+        const mainProduct = matched[0];
+        const shortDesc = mainProduct.description.split(" (จุดเด่น")[0].split(". เหมาะสำหรับ")[0];
+        replyText = `สำหรับข้อมูลที่คุณลูกค้าสนใจของตัว ${mainProduct.name} โทนจะเน้นไปที่ ${shortDesc} ค่ะ โดยราคารายถุงเริ่มต้นเพียง ${mainProduct.price} นะคะ แนะนำสั่งซื้อสะดวกรวดเร็วบนเว็บหลัก หรือแอดไลน์ขอตารางราคาขายส่งยกลังสุดคุ้มได้ที่ Line OA: @decemberdaycoffee หรือหากสะดวกให้ฝ่ายขายโทรติดต่อกลับโดยตรงเพื่อจัดส่งตัวอย่างหรือเปิดบิลด่วน สามารถแจ้งเบอร์โทรทิ้งไว้ได้เลยค่ะ เดี๋ยวน้องธันวาจัดเตรียมประสานให้ทันทีเลยนะคะ`;
+      } else {
+        replyText = `เรามีเมล็ดกาแฟราคาส่งยอดนิยม เช่น S5 Premium Dark และ Colombia Peach Candy ค่ะ สั่งซื้อสะดวกบนเว็บที่ https://www.decemberdaycoffee.com หรือแอดไลน์ขอตารางราคาได้ที่ @decemberdaycoffee หรือหากสะดวกให้ฝ่ายขายโทรกลับ แจ้งชื่อและเบอร์โทรทิ้งไว้ได้เลยนะคะ`;
+      }
     }
   } else if (/สวัสดี|ดีครับ|ดีค่ะ|ฮัลโหล/.test(lastMessage)) {
-    replyText = gender === "female"
-      ? `สวัสดีค่ะ! น้องธันวาจาก December Day Coffee ยินดีต้อนรับค่ะ ช่องทาง Line OA หลักคือ @decemberdaycoffee หรือเบอร์ติดต่อ 096-163-1456 ค่ะ วันนี้สนใจเมล็ดกาแฟหรือเรื่องเครื่องชงดีคะ?`
-      : `สวัสดีครับ! พี่ภูจาก December Day Coffee ยินดีต้อนรับครับ ช่องทาง Line OA หลักคือ @decemberdaycoffee หรือเบอร์ติดต่อ 096-163-1456 ครับ วันนี้สนใจเมล็ดกาแฟหรือเรื่องเครื่องชงดีครับ?`;
+    replyText = `สวัสดีค่ะ! น้องธันวาจาก December Day Coffee ยินดีต้อนรับค่ะ ช่องทาง Line OA หลักคือ @decemberdaycoffee หรือเบอร์ติดต่อ 096-163-1456 ค่ะ วันนี้สนใจเมล็ดกาแฟหรือเรื่องเครื่องชงดีคะ?`;
   } else {
-    replyText = gender === "female"
-      ? `รับทราบข้อมูลและพร้อมประสานงานให้เลยค่ะ สะดวกแอดไลน์ @decemberdaycoffee หรือติดต่อตรงคุณขวัญ 096-163-1456 หรือจะพิมพ์เบอร์โทรกลับทิ้งไว้เพื่อให้น้องธันวาโทรนัดหมายให้เลยดีคะ?`
-      : `รับทราบข้อมูลและพร้อมประสานงานให้เลยครับ สะดวกแอดไลน์ @decemberdaycoffee หรือติดต่อตรงคุณขวัญ 096-163-1456 หรือจะพิมพ์เบอร์โทรกลับทิ้งไว้เพื่อให้พี่ภูโทรนัดหมายให้เลยดีครับ?`;
+    replyText = `รับทราบข้อมูลและพร้อมประสานงานให้เลยค่ะ สะดวกแอดไลน์ @decemberdaycoffee หรือติดต่อตรงคุณขวัญ 096-163-1456 หรือจะพิมพ์เบอร์โทรกลับทิ้งไว้เพื่อให้น้องธันวาโทรนัดหมายให้เลยดีคะ?`;
   }
   
   // Extract info from message using regex

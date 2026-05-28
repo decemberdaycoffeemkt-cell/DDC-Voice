@@ -52,27 +52,40 @@ const getRelevantProducts = (lastUserMsg: string): string => {
     const name = p.name.toLowerCase();
     const desc = p.description.toLowerCase();
     
-    // Direct matches
-    if (query.includes(id) || query.includes(name)) return true;
+    // Normalize both query and product fields by removing spaces, dashes, parentheses for bulletproof Thai matching (Thai has no spaces)
+    const cleanQuery = query.replace(/[\s\-_()]/g, "");
+    const cleanId = id.replace(/[\s\-_()]/g, "");
+    const cleanName = name.replace(/[\s\-_()]/g, "");
+
+    // 1. Direct contains check of cleaned versions
+    if (cleanQuery.includes(cleanId) || cleanQuery.includes(cleanName) || cleanId.includes(cleanQuery) || cleanName.includes(cleanQuery)) {
+      return true;
+    }
     
-    // Extracted short code match (e.g. "s4", "s5", "s3", "wpm", "romola" in query)
-    const tokens = query.split(/[\s,;./\-_()]/).filter(t => t.length > 0);
-    for (const token of tokens) {
-      if (token.length >= 2) {
-        if (id === token || id.startsWith(token + "-") || id.endsWith("-" + token) || id.includes("-" + token + "-")) {
-          return true;
-        }
-        const nameWords = name.split(/[\s,;./\-_()]/);
-        if (nameWords.includes(token)) {
+    // 2. Short code contains check (e.g. check "s4", "s5", "s3", "t1", "g1")
+    const parts = id.split("-");
+    if (parts.length > 0) {
+      const shortCode = parts[0]; // e.g. "s4", "s5", "s3", "t1"
+      if (shortCode.length >= 2) {
+        if (cleanQuery.includes(shortCode)) {
           return true;
         }
       }
     }
     
-    // Fallback search keywords
-    const keywordTriggers = ["peach", "blueberry", "cocoa", "thai tea", "green tea", "wpm", "romola", "canvas", "izensso", "milky"];
+    // 3. Name word checks (e.g. "wpm", "izensso", "romola", "canvas")
+    const nameParts = name.split(/[\s\-_()]/).map(w => w.toLowerCase().trim()).filter(w => w.length >= 3);
+    for (const part of nameParts) {
+      if (cleanQuery.includes(part)) {
+        return true;
+      }
+    }
+
+    // 4. Fallback search keywords
+    const keywordTriggers = ["peach", "blueberry", "cocoa", "thai tea", "green tea", "jasmine", "wpm", "romola", "canvas", "izensso", "milky"];
     for (const kw of keywordTriggers) {
-      if (query.includes(kw) && (id.includes(kw) || name.includes(kw) || desc.includes(kw))) {
+      const cleanKw = kw.replace(/\s/g, "");
+      if (cleanQuery.includes(cleanKw) && (cleanId.includes(cleanKw) || cleanName.includes(cleanKw) || desc.includes(cleanKw))) {
         return true;
       }
     }

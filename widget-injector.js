@@ -83,9 +83,9 @@
   '}';
   document.head.appendChild(styleTag);
 
-  // 4. Create iframe referencing the deployed AI Voice Agent on GitHub Pages
+  // 4. Create iframe referencing the deployed AI Voice Agent on Render
   var iframe = document.createElement('iframe');
-  iframe.src = 'https://decemberdaycoffeemkt-cell.github.io/DDC-Voice/?widget=true';
+  iframe.src = 'https://ddc-voice.onrender.com/?widget=true';
   iframe.style.width = '100%';
   iframe.style.height = '100%';
   iframe.style.border = 'none';

@@ -1,0 +1,6 @@
+{
+  "name": "December Day Coffee - AI Voice Agent",
+  "description": "AI Voice Agent Simulator and Support Dashboard for December Day Coffee customers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

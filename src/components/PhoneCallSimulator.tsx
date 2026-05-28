@@ -245,6 +245,19 @@ export default function PhoneCallSimulator({
   };
 
   const startPhoneCall = async () => {
+    // Prime the Speech Synthesis engine synchronously on user click to unlock audio for the entire session (crucial for mobile/Safari/Chrome)
+    if ("speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.cancel();
+        const silentUtterance = new SpeechSynthesisUtterance(" ");
+        silentUtterance.volume = 0;
+        silentUtterance.rate = 1;
+        window.speechSynthesis.speak(silentUtterance);
+      } catch (e) {
+        console.warn("Failed to prime SpeechSynthesis:", e);
+      }
+    }
+
     setCallState("ringing");
     setChatHistory([]);
     setExtractedInfo({

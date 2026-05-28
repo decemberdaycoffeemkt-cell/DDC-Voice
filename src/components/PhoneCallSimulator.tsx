@@ -227,10 +227,17 @@ export default function PhoneCallSimulator({
     }
   };
 
-  // Setup Web Speech Recognition
-  useEffect(() => {
+  // Initialize Speech Recognition dynamically on user click to comply with browser gestures security
+  const initSpeechRecognition = () => {
+    if (recognitionRef.current) return recognitionRef.current;
+
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
+    if (!SpeechRecognition) {
+      setMicError("เบราว์เซอร์นี้ไม่สนับสนุนการรู้จำเสียงพูดทางไมค์");
+      return null;
+    }
+
+    try {
       const rec = new SpeechRecognition();
       rec.continuous = false;
       rec.interimResults = false;
@@ -251,11 +258,11 @@ export default function PhoneCallSimulator({
       rec.onerror = (event: any) => {
         console.error("Speech Recognition Error", event);
         if (event.error === "not-allowed") {
-          setMicError("ไม่ได้รับอนุญาตให้ใช้ไมโครโฟน");
+          setMicError("กรุณาอนุญาตสิทธิ์การเข้าถึงไมโครโฟนในเบราว์เซอร์ของคุณค่ะ");
         } else if (event.error === "no-speech") {
-          // just ignore silent
+          // ignore silent
         } else {
-          setMicError(`ข้อผิดพลาดเกี่ยวกับเสียง: ${event.error}`);
+          setMicError(`ล้มเหลวในการฟัง: ${event.error}`);
         }
         setIsListening(false);
       };
@@ -265,13 +272,23 @@ export default function PhoneCallSimulator({
       };
 
       recognitionRef.current = rec;
-    } else {
-      setMicError("เบราว์เซอร์นี้ไม่สนับสนุนการรู้จำเสียงพูดทางไมค์");
+      return rec;
+    } catch (e: any) {
+      console.error("Failed to initialize speech recognition:", e);
+      setMicError(`ไม่สามารถเปิดใช้งานไมค์ได้: ${e.message}`);
+      return null;
     }
+  };
 
-    // load voices
+  useEffect(() => {
+    // Prime speech voices asynchronously
     if ("speechSynthesis" in window) {
       window.speechSynthesis.getVoices();
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          window.speechSynthesis.getVoices();
+        };
+      }
     }
 
     return () => {
@@ -308,18 +325,34 @@ export default function PhoneCallSimulator({
   }, [chatHistory, callState]);
 
   const toggleMic = () => {
-    if (!recognitionRef.current) {
-      setMicError("ระบบจดจำเสียงไม่พร้อมใช้งานบนเครื่องนี้");
-      return;
+    let rec = recognitionRef.current;
+    if (!rec) {
+      rec = initSpeechRecognition();
     }
+    if (!rec) return;
+
     if (isListening) {
-      recognitionRef.current.stop();
+      try {
+        rec.stop();
+      } catch (e) {}
     } else {
       try {
         setMicError(null);
-        recognitionRef.current.start();
+        rec.start();
       } catch (e) {
-        console.error("Failed to start speech recognition:", e);
+        console.error("Failed to start speech recognition, retrying creation:", e);
+        try { rec.abort(); } catch(err) {}
+        
+        // Re-create to fix browser state locks
+        recognitionRef.current = null;
+        const newRec = initSpeechRecognition();
+        if (newRec) {
+          try {
+            newRec.start();
+          } catch(retryErr) {
+            setMicError("ไม่สามารถเข้าถึงไมค์ได้ในขณะนี้ กรุณารีเฟรชหน้าเว็บค่ะ");
+          }
+        }
       }
     }
   };

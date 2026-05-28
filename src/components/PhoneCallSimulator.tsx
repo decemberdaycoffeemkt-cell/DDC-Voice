@@ -326,9 +326,7 @@ export default function PhoneCallSimulator({
     setTimeout(() => {
       setCallState("connected");
       // Initial hello from agent
-      const initialGreeting = gender === "female" 
-        ? "สวัสดีค่ะ December Day Coffee ยินดีให้บริการค่ะ วันนี้ต้องการสอบถามข้อมูลสินค้า หรือแจ้งปัญหาด้านใดดีคะ?"
-        : "สวัสดีครับ December Day Coffee ยินดีให้บริการครับ วันนี้ต้องการสอบถามข้อมูลสินค้า หรือแจ้งปัญหาด้านใดดีครับ?";
+      const initialGreeting = "สวัสดีค่ะ น้องธันวาจาก December Day Coffee ยินดีให้บริการค่ะ วันนี้ต้องการสอบถามข้อมูลสินค้า หรือแจ้งปัญหาด้านใดดีคะ?";
       
       const greetingMsg: ChatMessage = {
         id: "greet-1",
@@ -485,23 +483,6 @@ export default function PhoneCallSimulator({
           >
             {enableVoiceOut ? <Volume2 size={15} /> : <VolumeX size={15} />}
           </button>
-          
-          <div className="flex bg-brand-green-dark/60 rounded-lg p-0.5 text-xs font-medium border border-white/10">
-            <button 
-              onClick={() => callState === "idle" && setGender("female")}
-              disabled={callState !== "idle"}
-              className={`px-2 py-1 rounded-md transition-all ${gender === "female" ? "bg-brand-green text-white" : "text-white/60 hover:text-white"}`}
-            >
-              หญิง (ค่ะ)
-            </button>
-            <button 
-              onClick={() => callState === "idle" && setGender("male")}
-              disabled={callState !== "idle"}
-              className={`px-2 py-1 rounded-md transition-all ${gender === "male" ? "bg-brand-green text-white" : "text-white/60 hover:text-white"}`}
-            >
-              ชาย (ครับ)
-            </button>
-          </div>
         </div>
       </div>
 

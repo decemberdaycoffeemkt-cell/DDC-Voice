@@ -12,13 +12,22 @@ const PORT = 3000;
 
 app.use(express.json());
 
+// Resilient API Key helper checking multiple name variations
+const getApiKey = (): string | undefined => {
+  return process.env.GEMINI_API_KEY || 
+         process.env.GEMINI_API || 
+         process.env.API_KEY || 
+         process.env.gemini_api_key || 
+         process.env.GeminiApiKey;
+};
+
 // Initialize Gemini safely
 let ai: GoogleGenAI | null = null;
 const getGeminiClient = (): GoogleGenAI => {
   if (!ai) {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getApiKey();
     if (!apiKey) {
-      console.warn("WARNING: GEMINI_API_KEY environment variable is not set. API calls will fail.");
+      console.warn("WARNING: GEMINI_API_KEY or alternative environment variable is not set. API calls will fail.");
     }
     ai = new GoogleGenAI({
       apiKey: apiKey || "MOCK_KEY_FOR_LINT",
@@ -42,9 +51,10 @@ app.post("/api/chat", async (req, res) => {
     }
 
     const client = getGeminiClient();
+    const apiKey = getApiKey();
     
     // Check if real key is available
-    if (!process.env.GEMINI_API_KEY) {
+    if (!apiKey) {
       // Return a simulated polite response if GEMINI_API_KEY is not defined
       const lastMessage = messages[messages.length - 1]?.content || "";
       const isTransferRequested = /คุยกับคน|ติดต่อช่าง|ขอสาย|พนักงาน|เจ้าหน้าที่|ขาย|ซ่อม/.test(lastMessage);

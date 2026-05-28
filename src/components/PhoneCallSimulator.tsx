@@ -201,6 +201,7 @@ export default function PhoneCallSimulator({
   const [apiLoading, setApiLoading] = useState(false);
   const [duration, setDuration] = useState(0);
   const [micError, setMicError] = useState<string | null>(null);
+  const [quotaWarning, setQuotaWarning] = useState<string | null>(null);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -507,6 +508,12 @@ export default function PhoneCallSimulator({
 
       const data = await response.json();
       
+      if (data.quotaWarning) {
+        setQuotaWarning(data.quotaWarning);
+      } else {
+        setQuotaWarning(null);
+      }
+      
       const responseMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         role: "assistant",
@@ -540,6 +547,7 @@ export default function PhoneCallSimulator({
 
     } catch (err: any) {
       console.warn("API error, falling back to local client simulator:", err);
+      setQuotaWarning("RESOURCE_EXHAUSTED");
       const data = simulateLocalResponse(text, gender);
       
       const responseMsg: ChatMessage = {
@@ -715,6 +723,17 @@ export default function PhoneCallSimulator({
                   {getFormatDuration(duration)}
                 </div>
               </div>
+
+              {/* Quota limit warning banner */}
+              {quotaWarning && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-805 text-[11px] px-3.5 py-2.5 rounded-xl mb-4 flex items-start gap-2 shadow-sm animate-pulse">
+                  <ShieldAlert size={15} className="text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-amber-900">โหมดสำรองอัจฉริยะ (Offline Simulator Mode):</span>{" "}
+                    คีย์ Gemini Free Tier ของคุณลูกค้าเกินโควต้าฟรีรายวัน (429 Resource Exhausted) ระบบจึงใช้ระบบจำลองคำพูดของน้องธันวาแบบออฟไลน์แทนชั่วคราวเพื่อรองรับสายไม่ให้ขาดค่ะ
+                  </div>
+                </div>
+              )}
 
               {/* Voice Transcript Section */}
               <div className="flex-1 overflow-y-auto px-2 space-y-4 max-h-[300px] mb-4 scrollbar-thin scrollbar-thumb-brand-green/10">

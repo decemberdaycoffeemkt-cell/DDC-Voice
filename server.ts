@@ -345,7 +345,84 @@ ${relevantProductsSummary}
 
   } catch (error: any) {
     console.error("Error in /api/chat:", error);
-    res.status(500).json({ error: error.message || "Internal Server Error" });
+    
+    // Graceful fallback for API errors (like 429 quota limits or invalid keys)
+    const { messages } = req.body;
+    const lastMessage = messages[messages.length - 1]?.content || "";
+    const hasPhone = /0\d{1,2}-?\d{3}-?\d{4}|0\d{8,9}/.test(lastMessage);
+    const wantsStaff = /คุยกับคน|ขอสาย|พนักงาน|เจ้าหน้าที่|คุยกับมนุษย์|โอนสาย|สายตรง|ต่อสาย/.test(lastMessage);
+    const isIssue = /พัง|เสีย|ใช้ไม่ได้|น้ำไม่ไหล|ร้อน|รั่ว|ชำรุด|ขัดข้อง/.test(lastMessage);
+    
+    const cleanQuery = lastMessage.toLowerCase().replace(/[\s\-_()]/g, "");
+    const matched = PRODUCTS.filter(p => {
+      const id = p.id.toLowerCase();
+      const name = p.name.toLowerCase();
+      const cleanId = id.replace(/[\s\-_()]/g, "");
+      const cleanName = name.replace(/[\s\-_()]/g, "");
+      if (cleanQuery.includes(cleanId) || cleanQuery.includes(cleanName) || cleanId.includes(cleanQuery) || cleanName.includes(cleanQuery)) {
+        return true;
+      }
+      const parts = id.split("-");
+      if (parts.length > 0) {
+        const shortCode = parts[0];
+        if (shortCode.length >= 2 && cleanQuery.includes(shortCode)) {
+          return true;
+        }
+      }
+      return false;
+    });
+
+    const isCoffeeQuery = matched.length > 0 || /เมล็ดกาแฟ|ราคาส่ง|ราคา|เมล็ด|กาแฟ|โปรโมชั่น|ส่วนลด|ค้าส่ง|วัตถุดิบ|ผงชง/.test(lastMessage);
+    
+    let replyText = `สวัสดีค่ะ น้องธันวา ยินดีให้บริการค่ะ หากต้องการสอบถามเมล็ดกาแฟ สเปกเครื่องชง หรือแจ้งเครื่องขัดข้อง แจ้งเรื่องได้เลยนะคะ`;
+    let shouldTransfer = false;
+    let targetDept = "none";
+    
+    if (wantsStaff) {
+      replyText = `รับทราบและเข้าใจแล้วค่ะ เดี๋ยวตัวน้องธันวาขอกดโอนสายไปยังคุณขวัญที่เบอร์ 096-163-1456 เพื่อดูแลให้ด่วนเลยนะคะ กรุณารอสักครู่เดียวค่ะ`;
+      shouldTransfer = true;
+      targetDept = "sales";
+    } else if (isIssue) {
+      if (hasPhone) {
+        replyText = `ได้รับเบอร์ติดต่อและอาการเรียบร้อยค่ะ เดี๋ยวรีบโอนสายส่งต่อทีมช่างเทคนิคให้ติดต่อกลับด่วนที่สุดเลยนะคะ กรุณารอสักครู่ค่ะ`;
+        shouldTransfer = true;
+        targetDept = "technician";
+      } else {
+        replyText = `อุ๊ย ต้องขอประทานโทษด้วยนะคะ ทางเรามีบริการซ่อมเครื่องชง เครื่องบด และเครื่องปั่นครบวงจร พร้อมล้างตะกรันและเปลี่ยนยางโอริงหัวชงค่ะ สามารถแอดไลน์ช่างด่วนที่ @decservice (https://lin.ee/WXYf27n) หรือแชร์เบอร์โทรติดต่อกลับและชื่อร้านไว้ที่นี่ เดี๋ยวน้องธันวาประสานงานช่างให้ทันทีเลยค่ะ`;
+      }
+    } else if (isCoffeeQuery) {
+      if (hasPhone) {
+        replyText = `ได้รับเบอร์ติดต่อเรียบร้อยค่ะ เดี๋ยวจะรีบประสานงานฝ่ายขายติดต่อกลับไปแนะนำเรตราคาส่งยกลังและจัดทำใบเสนอราคาให้ด่วนเลยนะคะ กรุณารอสักครู่ค่ะ`;
+        shouldTransfer = true;
+        targetDept = "sales";
+      } else {
+        if (matched.length > 0) {
+          const mainProduct = matched[0];
+          const shortDesc = mainProduct.description.split(" (จุดเด่น")[0].split(". เหมาะสำหรับ")[0];
+          replyText = `สำหรับข้อมูลที่คุณลูกค้าสนใจของตัว ${mainProduct.name} โทนจะเน้นไปที่ ${shortDesc} ค่ะ โดยราคารายถุงเริ่มต้นเพียง ${mainProduct.price} นะคะ แนะนำสั่งซื้อสะดวกรวดเร็วบนเว็บหลัก หรือแอดไลน์ขอตารางราคาขายส่งยกลังสุดคุ้มได้ที่ Line OA: @decemberdaycoffee (https://lin.ee/Qqn7rkn) หรือหากสะดวกให้ฝ่ายขายโทรติดต่อกลับโดยตรงเพื่อจัดส่งตัวอย่างหรือเปิดบิลด่วน สามารถแจ้งเบอร์โทรทิ้งไว้ได้เลยค่ะ เดี๋ยวน้องธันวาจัดเตรียมประสานให้ทันทีเลยนะคะ`;
+        } else {
+          replyText = `เรามีเมล็ดกาแฟราคาส่งยอดนิยม เช่น S5 Premium Dark สำหรับกาแฟนมรสเข้มข้น และ Colombia Peach Candy หอมหวานพีชฟุ้งๆ ค่ะ รบกวนแอดไลน์ขอตารางราคายกลังที่ Line OA: @decemberdaycoffee (https://lin.ee/Qqn7rkn) หรือจะให้ฝ่ายขายติดต่อกลับ แจ้งชื่อและเบอร์โทรไว้ได้เลยนะคะ`;
+        }
+      }
+    } else if (/สวัสดี|ดีครับ|ดีค่ะ|ฮัลโหล/.test(lastMessage)) {
+      replyText = `สวัสดีค่ะ! น้องธันวา ยินดีต้อนรับสู่ December Day Coffee ค่ะ วันนี้สนใจเมล็ดกาแฟคั่ว หรือต้องการแจ้งเรื่องดูแลเครื่องชงกาแฟดีคะ?`;
+    }
+
+    const isQuotaExceeded = error.message && error.message.toLowerCase().includes("quota");
+
+    res.json({
+      reply: replyText,
+      transferTriggered: shouldTransfer,
+      transferDepartment: targetDept,
+      quotaWarning: isQuotaExceeded ? "RESOURCE_EXHAUSTED" : "API_ERROR",
+      errorMessage: error.message || "Unknown API error",
+      extractedInfo: {
+        customerName: hasPhone ? "ลูกค้าสนใจบริการ" : null,
+        shopName: lastMessage.includes("ร้าน") ? "ร้านกาแฟลูกค้า" : null,
+        phone: hasPhone ? (lastMessage.match(/0\d{1,2}-?\d{3}-?\d{4}|0\d{8,9}/)?.[0] || null) : null,
+        issueDescription: lastMessage || "สอบถามข้อมูลทั่วไป"
+      }
+    });
   }
 });
 

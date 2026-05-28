@@ -42,41 +42,56 @@ const PRESET_PROMPTS = [
 
 const simulateLocalResponse = (inputText: string, gender: "female" | "male") => {
   const lastMessage = inputText.trim();
-  const isTransferRequested = /คุยกับคน|ติดต่อช่าง|ขอสาย|พนักงาน|เจ้าหน้าที่|ขาย|ซ่อม|บอส|ผู้จัดการ/.test(lastMessage);
+  const hasPhone = /0\d{1,2}-?\d{3}-?\d{4}|0\d{8,9}/.test(lastMessage);
+  const wantsStaff = /คุยกับคน|ขอสาย|พนักงาน|เจ้าหน้าที่|คุยกับมนุษย์|โอนสาย|สายตรง|ต่อสาย/.test(lastMessage);
   const isIssue = /พัง|เสีย|ใช้ไม่ได้|น้ำไม่ไหล|ร้อน|รั่ว|ชำรุด|ขัดข้อง|ซ่อม/.test(lastMessage);
-  const isCoffeeQuery = /เมล็ดกาแฟ|ราคาส่ง|ราคา|เมล็ด|กาแฟ|โปรโมชั่น|ส่วนลด|ค้าส่ง/.test(lastMessage);
+  const isCoffeeQuery = /เมล็ดกาแฟ|ราคาส่ง|ราคา|เมล็ด|กาแฟ|โปรโมชั่น|ส่วนลด|ค้าส่ง|วัตถุดิบ|ผงชง/.test(lastMessage);
   
   const replyTheme = gender === "female" ? "ค่ะ" : "ครับ";
-  const agentName = gender === "female" ? "น้องกัญญา" : "พี่ภู";
+  const agentName = gender === "female" ? "น้องธันวา" : "พี่ภู";
   
-  let replyText = `สวัสดี${replyTheme} ${agentName} ยินดีให้บริการค่ะ สำหรับการสั่งซื้อเมล็ดกาแฟ เครื่องชงกาแฟ หรือต้องการแจ้งปัญหาเทคนิค แจ้งข้อมูลเพิ่มเติมได้เลยนะคะ`;
+  let replyText = `สวัสดี${replyTheme} ${agentName} ยินดีให้บริการค่ะ/ครับ หากสนใจเมล็ดกาแฟราคาส่ง หรือแจ้งปัญหาแจ้งได้เลยนะคะ/ครับ`;
   let transferTriggered = false;
   let transferDepartment = "none";
   
-  if (isTransferRequested) {
+  if (wantsStaff) {
     replyText = gender === "female"
-      ? `รับทราบและเข้าใจแล้วค่ะ เดี๋ยวเหลือน้องกัญญาขอกดโอนสายไปยังคุณขวัญที่เบอร์ 096-163-1456 เพื่อดูแลให้ด่วนเลยนะคะ กรุณารอสักครู่เดียวค่ะ`
+      ? `รับทราบและเข้าใจแล้วค่ะ เดี๋ยวน้องธันวาขอกดโอนสายไปยังคุณขวัญที่เบอร์ 096-163-1456 เพื่อดูแลให้ด่วนเลยนะคะ กรุณารอสักครู่เดียวค่ะ`
       : `รับทราบและเข้าใจแล้วครับ เดี๋ยวพี่ภูขอกดโอนสายไปยังคุณขวัญที่เบอร์ 096-163-1456 เพื่อดูแลให้ด่วนเลยครับ กรุณารอสักครู่เดียวครับ`;
     transferTriggered = true;
     transferDepartment = "sales";
   } else if (isIssue) {
-    replyText = gender === "female"
-      ? `อุ๊ย ต้องขอประทานโทษด้วยนะคะที่เครื่องขัดข้อง ทางเรามีบริการซ่อมเครื่องชง เครื่องบด และเครื่องปั่นทุกอาการ พร้อมล้างตะกรันและเปลี่ยนยางโอริงหัวชงค่ะ สามารถแอดไลน์แจ้งแผนกช่างโดยตรงที่ @decservice (ลิงก์: https://lin.ee/WXYf27n) หรือแจ้งซ่อมออนไลน์ด้วยตนเองได้ด่วนที่ www.decemberdaycoffee.com/ddc-service เดี๋ยวน้องกัญญาประสานส่งต่อให้ด่วนเลยค่ะ`
-      : `อุ๊ย ต้องขอประทานโทษด้วยครับที่เครื่องขัดข้อง ทางเรามีบริการซ่อมเครื่องชง เครื่องบด และเครื่องปั่นทุกอาการ พร้อมล้างตะกรันและเปลี่ยนยางโอริงหัวชงครับ สามารถแอดไลน์แจ้งแผนกช่างโดยตรงที่ @decservice (ลิงก์: https://lin.ee/WXYf27n) หรือแจ้งซ่อมออนไลน์ด้วยตนเองได้ด่วนที่ www.decemberdaycoffee.com/ddc-service เดี๋ยวพี่ภูประสานส่งต่อให้ด่วนเลยครับ`;
-    transferTriggered = true;
-    transferDepartment = "technician";
+    if (hasPhone) {
+      replyText = gender === "female"
+        ? `ได้รับเบอร์ติดต่อและรับเรื่องเรียบร้อยค่ะ เดี๋ยวน้องธันวาขอกดโอนสายไปแจ้งทีมช่างเทคนิคเพื่อติดต่อกลับและเข้าไปดูแลด่วนที่สุดเลยนะคะ กรุณารอสักครู่ค่ะ`
+        : `ได้รับเบอร์ติดต่อและรับเรื่องเรียบร้อยครับ เดี๋ยวพี่ภูขอกดโอนสายไปแจ้งทีมช่างเทคนิคเพื่อติดต่อกลับและเข้าไปดูแลด่วนที่สุดเลยครับ กรุณารอสักครู่ครับ`;
+      transferTriggered = true;
+      transferDepartment = "technician";
+    } else {
+      replyText = gender === "female"
+        ? `อุ๊ย ต้องขอประทานโทษด้วยนะคะที่เครื่องขัดข้อง ทางเรามีบริการซ่อมเครื่องชง เครื่องบด และเครื่องปั่นครบวงจร พร้อมล้างตะกรันและเปลี่ยนยางโอริงหัวชงค่ะ สามารถแอดไลน์แจ้งโดยตรงที่ @decservice (ลิงก์: https://lin.ee/WXYf27n) หรือฝากเบอร์โทรติดต่อกลับไว้ เดี๋ยวน้องธันวาประสานงานช่างติดต่อกลับด่วนเลยค่ะ`
+        : `อุ๊ย ต้องขอประทานโทษด้วยครับที่เครื่องขัดข้อง ทางเรามีบริการซ่อมเครื่องชง เครื่องบด และเครื่องปั่นครบวงจร พร้อมล้างตะกรันและเปลี่ยนยางโอริงหัวชงครับ สามารถแอดไลน์แจ้งโดยตรงที่ @decservice (ลิงก์: https://lin.ee/WXYf27n) หรือฝากเบอร์โทรติดต่อกลับไว้ เดี๋ยวพี่ภูประสานงานช่างติดต่อกลับด่วนเลยครับ`;
+    }
   } else if (isCoffeeQuery) {
-    replyText = gender === "female"
-      ? `สำหรับราคาเมล็ดกาแฟค้าส่งของ December Day Coffee เรามีโปรโมชั่นพิเศษสำหรับร้านพาร์ทเนอร์ค่ะ แอดไลน์ขอตารางราคาได้ที่ @decemberdaycoffee หรือโทร 096-163-1456 ได้เลยค่ะ`
-      : `สำหรับราคาเมล็ดกาแฟค้าส่งของ December Day Coffee เรามีโปรโมชั่นพิเศษสำหรับร้านพาร์ทเนอร์ครับ แอดไลน์ขอตารางราคาได้ที่ @decemberdaycoffee หรือโทร 096-163-1456 ได้เลยครับ`;
+    if (hasPhone) {
+      replyText = gender === "female"
+        ? `ได้รับเบอร์ติดต่อเรียบร้อยค่ะ เดี๋ยวน้องธันวารีบประสานงานฝ่ายขายโทรกลับเพื่อจัดทำใบเสนอราคาเรตราคาส่งยกลังพิเศษและส่งตารางราคาให้ทันทีเลยนะคะ รอสักครู่ค่ะ`
+        : `ได้รับเบอร์ติดต่อเรียบร้อยครับ เดี๋ยวพี่ภูรีบประสานงานฝ่ายขายโทรกลับเพื่อจัดทำใบเสนอราคาเรตราคาส่งยกลังพิเศษและส่งตารางราคาให้ทันทีเลยครับ รอสักครู่ครับ`;
+      transferTriggered = true;
+      transferDepartment = "sales";
+    } else {
+      replyText = gender === "female"
+        ? `เรามีเมล็ดกาแฟราคาส่งยอดนิยม เช่น S5 Premium Dark และ Colombia Peach Candy ค่ะ สั่งซื้อสะดวกบนเว็บที่ https://www.decemberdaycoffee.com หรือแอดไลน์ขอตารางราคาได้ที่ @decemberdaycoffee หรือหากสะดวกให้ฝ่ายขายโทรกลับ แจ้งชื่อและเบอร์โทรทิ้งไว้ได้เลยนะคะ`
+        : `เรามีเมล็ดกาแฟราคาส่งยอดนิยม เช่น S5 Premium Dark และ Colombia Peach Candy ครับ สั่งซื้อสะดวกบนเว็บที่ https://www.decemberdaycoffee.com หรือแอดไลน์ขอตารางราคาได้ที่ @decemberdaycoffee หรือหากสะดวกให้ฝ่ายขายโทรกลับ แจ้งชื่อและเบอร์โทรทิ้งไว้ได้เลยครับ`;
+    }
   } else if (/สวัสดี|ดีครับ|ดีค่ะ|ฮัลโหล/.test(lastMessage)) {
     replyText = gender === "female"
-      ? `สวัสดีค่ะ! น้องกัญญาจาก December Day Coffee ยินดีต้อนรับค่ะ ช่องทาง Line OA หลักคือ @decemberdaycoffee หรือเบอร์ติดต่อ 096-163-1456 ค่ะ วันนี้สนใจเมล็ดกาแฟหรือเรื่องเครื่องชงดีคะ?`
+      ? `สวัสดีค่ะ! น้องธันวาจาก December Day Coffee ยินดีต้อนรับค่ะ ช่องทาง Line OA หลักคือ @decemberdaycoffee หรือเบอร์ติดต่อ 096-163-1456 ค่ะ วันนี้สนใจเมล็ดกาแฟหรือเรื่องเครื่องชงดีคะ?`
       : `สวัสดีครับ! พี่ภูจาก December Day Coffee ยินดีต้อนรับครับ ช่องทาง Line OA หลักคือ @decemberdaycoffee หรือเบอร์ติดต่อ 096-163-1456 ครับ วันนี้สนใจเมล็ดกาแฟหรือเรื่องเครื่องชงดีครับ?`;
   } else {
     replyText = gender === "female"
-      ? `รับทราบข้อมูลและประสานงานให้เลยค่ะ สามารถแอดไลน์ @decemberdaycoffee หรือติดต่อตรงคุณขวัญ 096-163-1456 หรือต้องการให้น้องกัญญาโอนสายหาผู้เชี่ยวชาญเลยดีคะ?`
-      : `รับทราบข้อมูลและประสานงานให้เลยครับ สามารถแอดไลน์ @decemberdaycoffee หรือติดต่อตรงคุณขวัญ 096-163-1456 หรือต้องการให้พี่ภูโอนสายหาผู้เชี่ยวชาญเลยดีครับ?`;
+      ? `รับทราบข้อมูลและพร้อมประสานงานให้เลยค่ะ สะดวกแอดไลน์ @decemberdaycoffee หรือติดต่อตรงคุณขวัญ 096-163-1456 หรือจะพิมพ์เบอร์โทรกลับทิ้งไว้เพื่อให้น้องธันวาโทรนัดหมายให้เลยดีคะ?`
+      : `รับทราบข้อมูลและพร้อมประสานงานให้เลยครับ สะดวกแอดไลน์ @decemberdaycoffee หรือติดต่อตรงคุณขวัญ 096-163-1456 หรือจะพิมพ์เบอร์โทรกลับทิ้งไว้เพื่อให้พี่ภูโทรนัดหมายให้เลยดีครับ?`;
   }
   
   // Extract info from message using regex
@@ -125,7 +140,7 @@ export default function PhoneCallSimulator({
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Thai text to speech
+  // Thai text to speech with cute, natural, premium voice options
   const speakThai = (text: string) => {
     if (!enableVoiceOut || !("speechSynthesis" in window)) return;
     try {
@@ -133,16 +148,49 @@ export default function PhoneCallSimulator({
       // Remove metadata emojis and symbols to make speech clean
       const cleanText = text.replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD00-\uDFFF]/g, "");
       const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.lang = "th-TH";
       
-      const voices = window.speechSynthesis.getVoices();
-      // Find a Thai voice
-      const thVoice = voices.find(v => v.lang.toLowerCase().includes("th"));
+      let voices = window.speechSynthesis.getVoices();
+      if (voices.length === 0) {
+        // Retry once in case of delay
+        voices = window.speechSynthesis.getVoices();
+      }
+      
+      // Filter Thai voices
+      const thVoices = voices.filter(v => v.lang.toLowerCase().includes("th") || v.lang.toLowerCase() === "th-th");
+      
+      // Prioritize premium/online/google voices over offline ones for a much more natural, high-fidelity experience
+      let thVoice = null;
+      if (thVoices.length > 0) {
+        // 1. Natural or Online premium voice (e.g. Microsoft Pattara Online (Natural))
+        thVoice = thVoices.find(v => v.name.toLowerCase().includes("natural") || v.name.toLowerCase().includes("online"));
+        // 2. Google high quality online voice
+        if (!thVoice) {
+          thVoice = thVoices.find(v => v.name.toLowerCase().includes("google"));
+        }
+        // 3. Fallback to first available Thai voice
+        if (!thVoice) {
+          thVoice = thVoices[0];
+        }
+      }
+      
       if (thVoice) {
         utterance.voice = thVoice;
+        utterance.lang = thVoice.lang;
+      } else {
+        utterance.lang = "th-TH";
       }
-      utterance.rate = 1.05; // Slightly faster for natural flow
-      utterance.pitch = 1.0;
+      
+      // Dynamic voice settings to enhance aesthetics (pitch & rate) to sound sweet, cute, and friendly
+      if (gender === "female") {
+        // Nong Thanwa is sweet and slightly higher pitched for cute, premium vibes
+        utterance.pitch = 1.15; // Raised pitch makes the voice sound younger, sweeter, and cute!
+        utterance.rate = 1.02;  // Natural flow rate
+      } else {
+        // P' Phu is a warm, polite gentleman
+        utterance.pitch = 0.98;
+        utterance.rate = 1.05;
+      }
+      
       window.speechSynthesis.speak(utterance);
     } catch (e) {
       console.warn("Speech synthesis error", e);
@@ -480,7 +528,7 @@ export default function PhoneCallSimulator({
                 <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-green-light text-brand-green border border-brand-green/20 text-xs font-semibold">
                   <Cpu size={12} />
                   <span>
-                    เสียงบริการปัจจุบัน: {gender === "female" ? "น้องกัญญา (ค่ะ/คะ)" : "พี่ภู (ครับ/ครับผม)"}
+                    เสียงบริการปัจจุบัน: {gender === "female" ? "น้องธันวา (ค่ะ/คะ)" : "พี่ภู (ครับ/ครับผม)"}
                   </span>
                 </div>
               </div>
@@ -531,7 +579,7 @@ export default function PhoneCallSimulator({
                 กำลังหมุนเรียกสาย...
               </span>
               <h4 className="text-2xl font-bold text-zinc-900 mt-2">
-                {gender === "female" ? "น้องกัญญา" : "พี่ภู"} (AI Client Services)
+                {gender === "female" ? "น้องธันวา" : "พี่ภู"} (AI Client Services)
               </h4>
               <p className="text-xs text-zinc-500 mt-1">
                 December Day Automatic Call Center
@@ -579,7 +627,7 @@ export default function PhoneCallSimulator({
                           <>
                             <div className="w-1.5 h-1.5 rounded-full bg-brand-green" />
                             <span className="text-[10px] font-bold text-brand-green uppercase">
-                              {gender === "female" ? "น้องกัญญา" : "พี่ภู"}
+                              {gender === "female" ? "น้องธันวา" : "พี่ภู"}
                             </span>
                           </>
                         ) : (
@@ -605,7 +653,7 @@ export default function PhoneCallSimulator({
                 {apiLoading && (
                   <div className="flex justify-start">
                     <div className="bg-zinc-50 border border-zinc-100 rounded-2xl rounded-tl-none px-4 py-2.5 flex items-center gap-2">
-                      <span className="text-xs text-zinc-400">{gender === "female" ? "น้องกัญญากำลังพิมพ์..." : "พี่ภูกำลังพิมพ์..."}</span>
+                      <span className="text-xs text-zinc-400">{gender === "female" ? "น้องธันวากำลังพิมพ์..." : "พี่ภูกำลังพิมพ์..."}</span>
                       <div className="flex gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-bounce delay-75" />
                         <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-bounce delay-150" />
@@ -662,7 +710,7 @@ export default function PhoneCallSimulator({
                       CONNECTED TO OPERATOR
                     </div>
                     <span className="text-xs text-zinc-500 font-sans">
-                      ระบบ AI น้องกัญญาได้สลับสายช่างเทคนิค/ความช่วยเหลือเรียบร้อย ตารางดูแลขึ้นด้านข้าง CRM
+                      ระบบ AI น้องธันวาได้สลับสายช่างเทคนิค/ความช่วยเหลือเรียบร้อย ตารางดูแลขึ้นด้านข้าง CRM
                     </span>
                   </div>
                 )}

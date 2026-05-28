@@ -55,43 +55,71 @@ app.post("/api/chat", async (req, res) => {
     
     // Check if real key is available
     if (!apiKey) {
-      // Return a simulated polite response if GEMINI_API_KEY is not defined
+      // Return an intelligent, polite simulated response if GEMINI_API_KEY is not defined
       const lastMessage = messages[messages.length - 1]?.content || "";
-      const isTransferRequested = /คุยกับคน|ติดต่อช่าง|ขอสาย|พนักงาน|เจ้าหน้าที่|ขาย|ซ่อม/.test(lastMessage);
-      const isIssue = /พัง|เสีย|ใช้ไม่ได้|น้ำไม่ไหล|ร้อน/.test(lastMessage);
+      const hasPhone = /0\d{1,2}-?\d{3}-?\d{4}|0\d{8,9}/.test(lastMessage);
+      const wantsStaff = /คุยกับคน|ขอสาย|พนักงาน|เจ้าหน้าที่|คุยกับมนุษย์|โอนสาย|สายตรง|ต่อสาย/.test(lastMessage);
+      const isIssue = /พัง|เสีย|ใช้ไม่ได้|น้ำไม่ไหล|ร้อน|รั่ว|ชำรุด|ขัดข้อง/.test(lastMessage);
+      const isCoffeeQuery = /เมล็ดกาแฟ|ราคาส่ง|ราคา|เมล็ด|กาแฟ|โปรโมชั่น|ส่วนลด|ค้าส่ง|วัตถุดิบ|ผงชง/.test(lastMessage);
       
       const replyTheme = gender === "female" ? "ค่ะ" : "ครับ";
-      let replyText = `สวัสดี${replyTheme} น้องกัญญาจำลองยินดีให้บริการค่ะ หากสนใจเมล็ดกาแฟราคาส่ง แอดไลน์ @decemberdaycoffee ได้เลยนะคะ หรือต้องการแจ้งปัญหากดเริ่มสายจำลองได้เลยค่ะ`;
-      if (isTransferRequested) {
-        replyText = `รับทราบและเข้าใจแล้ว${replyTheme} เดี๋ยวขอกดโอนสายไปยังคุณขวัญที่เบอร์ 096-163-1456 เพื่อดูแลให้ด่วนเลยนะคะ/ครับ กรุณารอสักครู่เดียวค่ะ/ครับ`;
+      const agentName = gender === "female" ? "น้องธันวา" : "พี่ภู";
+      
+      let replyText = `สวัสดี${replyTheme} ${agentName} ยินดีให้บริการค่ะ/ครับ หากต้องการสอบถามเมล็ดกาแฟ สเปกเครื่องชง หรือแจ้งเครื่องขัดข้อง แจ้งเรื่องได้เลยนะคะ/ครับ`;
+      let shouldTransfer = false;
+      let targetDept = "none";
+      
+      if (wantsStaff) {
+        replyText = `รับทราบและเข้าใจแล้ว${replyTheme} เดี๋ยว${agentName}ขอกดโอนสายไปยังคุณขวัญที่เบอร์ 096-163-1456 เพื่อดูแลให้ด่วนเลยนะคะ/ครับ กรุณารอสักครู่เดียวค่ะ/ครับ`;
+        shouldTransfer = true;
+        targetDept = "sales";
       } else if (isIssue) {
-        replyText = `อุ๊ย ต้องขอประทานโทษด้วย${replyTheme} ทางเรามีบริการซ่อมเครื่องชง เครื่องบด และเครื่องปั่นครบวงจร พร้อมล้างตะกรันและเปลี่ยนยางโอริงหัวชงค่ะ/ครับ สามารถแจ้งซ่อมออนไลน์ด่วนได้ที่ www.decemberdaycoffee.com/ddc-service หรือแอดไลน์แผนกช่างตรงที่ @decservice (ลิงก์: https://lin.ee/WXYf27n) เดี๋ยวจะโอนสายแจ้งเรื่องต่อให้ทันทีเลยค่ะ/ครับ`;
+        if (hasPhone) {
+          replyText = `ได้รับเบอร์ติดต่อและอาการเรียบร้อย${replyTheme} เดี๋ยวรีบโอนสายส่งต่อทีมช่างเทคนิคให้ติดต่อกลับด่วนที่สุดเลยนะคะ/ครับ กรุณารอสักครู่ค่ะ/ครับ`;
+          shouldTransfer = true;
+          targetDept = "technician";
+        } else {
+          replyText = `อุ๊ย ต้องขอประทานโทษด้วย${replyTheme} ทางเรามีบริการซ่อมเครื่องชง เครื่องบด และเครื่องปั่นครบวงจร พร้อมล้างตะกรันและเปลี่ยนยางโอริงหัวชงค่ะ/ครับ สามารถแอดไลน์ช่างด่วนที่ @decservice (https://lin.ee/WXYf27n) หรือแชร์เบอร์โทรติดต่อกลับและชื่อร้านไว้ที่นี่ เดี๋ยวน้องธันวาประสานงานช่างให้ทันทีเลยค่ะ/ครับ`;
+        }
+      } else if (isCoffeeQuery) {
+        if (hasPhone) {
+          replyText = `ได้รับเบอร์ติดต่อเรียบร้อย${replyTheme} เดี๋ยวจะรีบประสานงานฝ่ายขายติดต่อกลับไปแนะนำเรตราคาส่งยกลังและจัดทำใบเสนอราคาให้ด่วนเลยนะคะ/ครับ กรุณารอสักครู่ค่ะ/ครับ`;
+          shouldTransfer = true;
+          targetDept = "sales";
+        } else {
+          replyText = `เรามีเมล็ดกาแฟราคาส่งยอดนิยม เช่น S5 Premium Dark สำหรับกาแฟนมรสเข้มข้น และ Colombia Peach Candy หอมหวานพีชฟุ้งๆ ค่ะ/ครับ รบกวนแอดไลน์ขอตารางราคายกลังที่ Line OA: @decemberdaycoffee (https://lin.ee/Qqn7rkn) หรือจะให้ฝ่ายขายติดต่อกลับ แจ้งชื่อและเบอร์โทรไว้ได้เลยนะคะ/ครับ`;
+        }
+      } else if (/สวัสดี|ดีครับ|ดีค่ะ|ฮัลโหล/.test(lastMessage)) {
+        replyText = `สวัสดีค่ะ/ครับ! ${agentName} ยินดีต้อนรับสู่ December Day Coffee ค่ะ/ครับ วันนี้สนใจเมล็ดกาแฟคั่ว หรือต้องการแจ้งเรื่องดูแลเครื่องชงกาแฟดีคะ/ครับ?`;
       }
       
       return res.json({
         reply: replyText,
-        transferTriggered: isTransferRequested || isIssue,
-        transferDepartment: isIssue ? "technician" : (isTransferRequested ? "sales" : "none"),
+        transferTriggered: shouldTransfer,
+        transferDepartment: targetDept,
         extractedInfo: {
-          customerName: "คุณขวัญ (เจ้าของแบรนด์)",
-          shopName: "ร้านกาแฟชั่วคราว",
-          phone: "096-163-1456",
+          customerName: hasPhone ? "ลูกค้าสนใจบริการ" : null,
+          shopName: lastMessage.includes("ร้าน") ? "ร้านกาแฟลูกค้า" : null,
+          phone: hasPhone ? (lastMessage.match(/0\d{1,2}-?\d{3}-?\d{4}|0\d{8,9}/)?.[0] || null) : null,
           issueDescription: lastMessage || "สอบถามข้อมูลทั่วไป"
         }
       });
     }
 
-    // Build a product catalog summary to teach the Gemini model all our real items dynamically
-    const coffeeBeansSummary = PRODUCTS.filter(p => p.category === "coffee_beans")
-      .map(p => `- ${p.name}: ${p.description.slice(0, 180)} (ราคา ${p.price}${p.wholesalePrice ? `, ${p.wholesalePrice}` : ""})`)
+    // Curated dynamic lists to keep the prompt compact, blazing fast (<1s response), and highly accurate
+    const selectedBeanIds = ["s5-premium-dark", "s3-premium-blend", "milky-lover", "colombia-blueberry", "colombia-peach"];
+    const coffeeBeansSummary = PRODUCTS.filter(p => p.category === "coffee_beans" && selectedBeanIds.includes(p.id))
+      .map(p => `- ${p.name}: ${p.description.split(" (จุดเด่น")[0]} (ราคา ${p.price})`)
       .join("\n");
       
-    const ingredientsSummary = PRODUCTS.filter(p => p.category === "ingredients")
-      .map(p => `- ${p.name}: ${p.description.slice(0, 180)} (ราคา ${p.price}${p.wholesalePrice ? `, ${p.wholesalePrice}` : ""})`)
+    const selectedIngredIds = ["t1-thai-tea-premium", "g1-green-tea-premium", "jasmine-green-tea", "cocoa-premium"];
+    const ingredientsSummary = PRODUCTS.filter(p => p.category === "ingredients" && selectedIngredIds.includes(p.id))
+      .map(p => `- ${p.name}: ${p.description.split(" (จุดเด่น")[0]} (ราคา ${p.price})`)
       .join("\n");
 
-    const machinesSummary = PRODUCTS.filter(p => p.category === "machines")
-      .map(p => `- ${p.name}: ${p.description.slice(0, 180)} (ราคา ${p.price}${p.wholesalePrice ? `, ${p.wholesalePrice}` : ""})`)
+    const selectedMachineIds = ["product-003", "product-004", "product-006"]; // WPM KD-270 SN, ROMOLA CANVAS, IZENSSO 1-3089
+    const machinesSummary = PRODUCTS.filter(p => p.category === "machines" && selectedMachineIds.includes(p.id))
+      .map(p => `- ${p.name}: ${p.description.split(". เหมาะสำหรับ")[0]} (ราคา ${p.price})`)
       .join("\n");
 
     // Set up Dynamic System Prompt based on selected Agent Gender
@@ -100,41 +128,43 @@ app.post("/api/chat", async (req, res) => {
 กติกาสำคัญในการสนทนาและการตอบกลับ (ทางเสียงพูด):
 1. พูดคุยภาษาไทยอย่างสุภาพ นอบน้อม และมีจิตวิญญาณบริการ (Service Mind) อย่างที่สุด
 2. เนื่องจากเป็นการคุยทางเสียง ให้ตอบอย่างสั้นกระชับเป็นธรรมชาติ ไม่พูดเนื้อหายาวเกิน 20 วินาที หรือราว 2-3 ประโยคในแต่ละรอบเป็นอันเด็ดขาด! หลีกเลี่ยงรายการข้อย่อยยาวๆ ยกเว้นถามความเห็นลูกค้า
-3. ${gender === "female" ? 'คุณคือเอเจนต์ผู้หญิง ชื่อ "น้องกัญญา" (Nong Kanya) ต้องลงท้ายประโยคด้วย "ค่ะ" หรือ "คะ" ทุกประโยคเป็นหางเสียง ห้ามลืมอย่างเด็ดขาดค่ะ โดย "ค่ะ" ใช้กับประโยคบอกเล่า/ชี้แจง และ "คะ" ใช้กับประโยคถามไถ่/ต้องการเสียงสูง' : 'คุณคือเอเจนต์ผู้ชาย ชื่อ "พี่ภู" (P\' Phu) ต้องลงท้ายประโยคด้วยคำสุภาพว่า "ครับ" หรือ "ครับผม" ทุกประโยคเป็นหางเสียงสุภาพครับ'}
-4. การรับแจ้งปัญหาเกี่ยวกับเครื่องชงและอุปกรณ์ (เทคนิค):
-   - หากลูกค้าแจ้งว่ามีปัญหากับเครื่องชงกาแฟ (เช่น น้ำไม่ร้อน, น้ำไม่ไหล, บดกาแฟไม่ได้, เปิดไม่ติด ฯลฯ) ให้พูดแสดงความเห็นอกเห็นใจทันทีและยินดีประสานช่างให้เต็มที่ (เช่น "โอ้ ต้องขออภัยในความไม่สะดวกเป็นอย่างยิ่งเลยนะคะ/ครับ ไม่ต้องกังวลนะคะ/ครับ เดี๋ยวรีบประสานงานช่างเทคนิคให้ด่วนที่สุดเลยค่ะ/ครับ")
-   - ชี้แจงบริการทีมช่าง: แบรนด์เรามี "บริการซ่อมและดูแลเครื่องชงกาแฟครบวงจร" รับซ่อมเครื่องชงกาแฟ เครื่องบด และเครื่องปั่นทุกรุ่น ทุกอาการ มีบริการล้างตะกรัน (Descaling) และเปลี่ยนยางโอริงหัวชง พร้อมให้บริการทั้งในและนอกสถานที่
-   - แนะนำช่องทางการแจ้งซ่อมด้วยตัวเองที่สะดวกและรวดเร็ว: ทางลิงก์ออนไลน์ https://www.decemberdaycoffee.com/ddc-service หรือแอดไลน์ของแผนกดูแลทีมช่างเทคนิคโดยตรงที่ LINE OA: @decservice (ลิงก์แอดไลน์: https://lin.ee/WXYf27n)
-   - สอบถามเพื่อเก็บข้อมูลทีละอย่าง (ห้ามพรั่งพรูถามทีเดียวยาวๆ) ได้แก่: 1) ชื่อของคุณลูกค้าหรือชื่อร้านกาแฟของลูกค้า, 2) เบอร์โทรศัพท์ติดต่อกลับที่สะดวก, 3) อาการเครื่องเสียเบื้องต้น
-   - ห้ามเดาอาการเสียหรือพยายามแนะนำวิธีซ่อมเองทางโทรศัพท์เด็ดขาด! ให้เก็บข้อมูลแล้วเตรียมโอนสายช่างทันที
-5. การโอนสาย (Handoff to Human):
-   - หากลูกค้าแจ้งปัญหาทางเทคนิค และได้ให้ชื่อและเบอร์โทรศัพท์ (หรือข้อมูลเพียงพอ) แล้ว ให้สรุปว่าจะโอนสายให้ช่างเทคนิคดูแลต่อ แล้วเปลี่ยนสถานะโอนสายทันที
-   - หากลูกค้าร้องขอสายพนักงานโดยตรง หรือพูดว่า "ขอคุยกับคน", "โอนสายพนักงาน", "ขอสายช่าง", "คุยกับช่าง" ให้ประสานโอนสายทันที ห้ามยื้อสายกวนใจลูกค้าเด็ดขาด
-   - หาก AI ไม่เข้าใจลูกค้าหรือตอบผิดประเด็นเกิน 2 รอบ ให้ประสานงานโอนสายเพื่อช่วยเหลือทันที
-6. การให้ข้อมูลบริการและสินค้า:
-   - เมล็ดกาแฟ/วัตถุดิบ: ตอบข้อมูลราคาส่งและรายละเอียดตามฐานข้อมูลสินค้าด้านล่างนี้อย่างถูกต้อง (พูดคุยสั้นๆ กระชับ ห้ามพูดลิสต์ยาว ให้เสนอส่งตารางราคายกลังทาง Line OA @decemberdaycoffee)
-   - เครื่องชงกาแฟ: แนะนำสเปกสั้นๆ ตามฐานข้อมูลสินค้าด้านล่างนี้อย่างถูกต้อง และสามารถโอนสายให้ฝ่ายขายสถาปนิกทำใบเสนอราคาให้ได้ด่วน
+3. ${gender === "female" ? 'คุณคือเอเจนต์ผู้หญิง ชื่อ "น้องธันวา" (Nong Thanwa) ต้องลงท้ายประโยคด้วย "ค่ะ" หรือ "คะ" ทุกประโยคเป็นหางเสียง ห้ามลืมอย่างเด็ดขาดค่ะ โดย "ค่ะ" ใช้กับประโยคบอกเล่า/ชี้แจง และ "คะ" ใช้กับประโยคถามไถ่/ต้องการเสียงสูง' : 'คุณคือเอเจนต์ผู้ชาย ชื่อ "พี่ภู" (P\' Phu) ต้องลงท้ายประโยคด้วยคำสุภาพว่า "ครับ" หรือ "ครับผม" ทุกประโยคเป็นหางเสียงสุภาพครับ'}
 
-7. ฐานข้อมูลสินค้าที่เป็นทางการของแบรนด์ (กรุณาใช้ข้อมูลนี้ตอบลูกค้าเรื่องราคา สเปก และคุณสมบัติ ห้ามเดาหรือเมคราคาขึ้นมาเองเด็ดขาด):
-[หมวดเมล็ดกาแฟ]
+4. กฎเหล็กในการโอนสาย (Handoff Rules - สำคัญมาก):
+   - ห้ามตั้งค่า transferTriggered: true เป็นอันเด็ดขาด หากลูกค้าเพียงแค่ถามคำถามทั่วไป เช่น "มีเมล็ดกาแฟแบบไหนบ้าง", "ราคาเท่าไหร่", "ขอทราบข้อมูลสินค้า", "เครื่องสตีมนมพังแก้ยังไงดี"
+   - ให้ตอบคำถามและให้ข้อมูลลูกค้าอย่างสุภาพก่อนเสมอ โดยอิงจากข้อมูลด้านล่าง
+   - คุณจะเปิดสัญญาณโอนสาย (transferTriggered: true) ได้เฉพาะใน 3 สถานการณ์นี้เท่านั้น:
+     1) ลูกค้าร้องขอสายพนักงานโดยตรง เช่น "ขอคุยกับคน", "โอนสายพนักงาน", "ขอสายช่าง", "ขอคุยกับคุณขวัญ"
+     2) ลูกค้าแจ้งปัญหาเครื่องเสียทางเทคนิค และได้แจ้งเบอร์โทรศัพท์ติดต่อกลับที่สะดวกแล้ว
+     3) ลูกค้าสนใจสั่งซื้อปริมาณมาก/ขอใบเสนอราคาส่งยกลัง และได้แจ้งเบอร์โทรศัพท์ติดต่อกลับที่สะดวกแล้ว
+   - หากลูกค้าแจ้งปัญหาเครื่องเสียแต่ยังไม่ให้เบอร์โทร ให้พูดแสดงความเห็นใจและถามเบอร์โทรก่อน: "เรื่องเครื่องมีปัญหายินดีประสานงานให้เลยค่ะ ขอทราบชื่อและเบอร์โทรติดต่อกลับที่สะดวกเพื่อส่งเรื่องให้ช่างเทคนิคติดต่อกลับด่วนได้ไหมคะ?" เมื่อได้เบอร์แล้วจึงค่อยเซ็ตโอนสายในรอบถัดไป
+
+5. ข้อมูลสินค้าและบริการที่เป็นทางการของแบรนด์:
+   - เมล็ดกาแฟ/วัตถุดิบ: แนะนำตัวเด่นๆ 2-3 ตัวจากด้านล่าง (พูดสั้นๆ กระชับ ห้ามท่องลิสต์ยาว) และแนะนำว่าสั่งซื้อเมล็ดกาแฟผ่านเว็บไซต์หลักได้ที่ https://www.decemberdaycoffee.com/category/2475/coffee-beans#SECTION_PAGE หรือแอดไลน์ขอตารางราคายกลังที่ Line OA: @decemberdaycoffee (ลิงก์: https://lin.ee/Qqn7rkn)
+   - บริการทีมช่างซ่อม: แบรนด์เรามี "บริการซ่อมและดูแลเครื่องชงกาแฟครบวงจร" ซ่อมเครื่องชง เครื่องบด เครื่องปั่นทุกรุ่น ทุกอาการ ล้างตะกรัน (Descaling) และเปลี่ยนยางโอริงหัวชง บริการทั้งในและนอกสถานที่ แนะนำแอดไลน์ช่างเทคนิคด่วนที่ Line OA: @decservice (ลิงก์: https://lin.ee/WXYf27n) หรือแจ้งออนไลน์ที่ www.decemberdaycoffee.com/ddc-service
+   - เครื่องชงกาแฟ: แนะนำเครื่องชงกาแฟ 1-2 รุ่นด้านล่าง และเสนอให้ฝ่ายขายจัดทำใบเสนอราคาให้
+
+6. รายการสินค้าเด่นของแบรนด์ (SHOWCASE PRODUCTS):
+[หมวดเมล็ดกาแฟยอดนิยม]
 ${coffeeBeansSummary}
+(หมายเหตุ: เรามีเมล็ดกาแฟอีกกว่า 100 รายการ สามารถแอดไลน์ @decemberdaycoffee เพื่อรับแคตตาล็อกตัวเต็มได้ค่ะ/ครับ)
 
-[หมวดวัตถุดิบและผงชง]
+[หมวดผงชงและวัตถุดิบยอดนิยม]
 ${ingredientsSummary}
 
-[หมวดเครื่องชงกาแฟ]
+[หมวดเครื่องชงกาแฟแนะนำ]
 ${machinesSummary}
 
 รูปแบบการคุ้มครองข้อมูลเพื่อส่งออกเป็น JSON (สำคัญมาก):
 คุณต้องคืนการตอบกลับในรูปแบบ JSON วัตถุ และระบุฟิลด์เหล่านี้:
-- reply: (string) ข้อความแสดงจุดยืน เสียงเอเจนต์ภาษาไทย สุภาพ สั้นและอ่อนโยนตามกติกาข้างต้น
-- transferTriggered: (boolean) ประเมินว่าต้องโอนสายทันทีหรือไม่ (เช่น ลูกค้าแจ้งเบอร์โทรและเคลียร์อาการเสียแล้ว, ลูกค้าเรียกหานักเทคนิค/ช่าง/คุยกับคน)
-- transferDepartment: (string) สาขาโอนสาย ('sales', 'technician' หรือ 'none')
-- extractedInfo: (object) ข้อมูลลูกค้าในปัจจุบันที่สามารถระบุได้จากในแชทสะสมมา:
+- reply: (string) ข้อความเสียงตอบกลับภาษาไทย สั้น กระชับ อ่อนน้อมตามกติกาข้างต้น
+- transferTriggered: (boolean) เป็น true เมื่อเข้าเงื่อนไขโอนสาย 3 ข้อข้างต้นเท่านั้น นอกนั้นต้องเป็น false
+- transferDepartment: (string) ส่วนงานโอนสาย ('sales', 'technician' หรือ 'none')
+- extractedInfo: (object) ข้อมูลลูกค้าที่จับใจความได้:
   * customerName: (string หรือ null) ชื่อลูกค้า
   * shopName: (string หรือ null) ชื่อร้านกาแฟ
   * phone: (string หรือ null) เบอร์โทรศัพท์ลูกค้าที่ได้แจ้งไว้
-  * issueDescription: (string หรือ null) ปัญหาร้านค้าที่ลูกค้าพบ หรือความสนใจสินค้าที่ชัดเจน`;
+  * issueDescription: (string หรือ null) สรุปปัญหาร้านค้าหรือสิ่งที่ลูกค้าสนใจ`;
 
     // Map frontend formats to Gemini Chats API
     // We will build a structured array for Gemini contents parameter.

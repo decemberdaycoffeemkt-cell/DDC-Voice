@@ -704,7 +704,7 @@ export const HISTORIC_TICKETS: SupportTicket[] = [
     timestamp: new Date(Date.now() - 3600000 * 2), // 2 hours ago
     chatHistory: [
       { id: "h1", role: "user", content: "สวัสดีค่ะ พอดีจะปรึกษาช่างหน่อยค่ะ เรื่องเครื่องชงน้ำซึม", timestamp: new Date() },
-      { id: "h2", role: "assistant", content: "สวัสดีค่ะ สำหรับปัญหาเครื่องชงน้ำซึม น้องกัญญาประสานงานช่างแก้ไขให้ด่วนเลยนะคะ ขอทราบชื่อและเบอร์โทรติดต่อหน่อยค่ะ", timestamp: new Date() },
+      { id: "h2", role: "assistant", content: "สวัสดีค่ะ สำหรับปัญหาเครื่องชงน้ำซึม น้องธันวาประสานงานช่างแก้ไขให้ด่วนเลยนะคะ ขอทราบชื่อและเบอร์โทรติดต่อหน่อยค่ะ", timestamp: new Date() },
       { id: "h3", role: "user", content: "มินตราค่ะ จากร้าน Minty Cafe เบอร์โทรนะคะ 0897641234 ค่ะ ซึมออกด้านข้างกรุ๊ปชงเลยค่ะ", timestamp: new Date() },
       { id: "h4", role: "assistant", content: "ต้องขออภัยในความไม่สะดวกอย่างยิ่งเลยนะคะ เดี๋ยวจะโอนสายให้พี่ๆ เทคนิคชี้แจงเบื้องต้นและวางวันเข้าไปเปลี่ยนอะไหล่ให้เลยทันทีค่ะ รอสักครู่นะคะ", timestamp: new Date() }
     ]
@@ -742,7 +742,7 @@ export const HISTORIC_TICKETS: SupportTicket[] = [
       { id: "h9", role: "user", content: "อยากเห็นหน้าสเปกตัวชาเขียวอูจิมัทฉะครับว่ามีขนาดยังไงบ้าง", timestamp: new Date() },
       { id: "h10", role: "assistant", content: "สำหรับชาเขียวอุจิมัทฉะ เกรดพิธีการ ของเราแชร์รูปภาพและรายละเอียดส่วนประกอบทั้งหมดผ่าน Line OA @decemberdaycoffee ได้ทันทีเลยค่ะ สนใจรับช่องทางนี้ไหมคะ", timestamp: new Date() },
       { id: "h11", role: "user", content: "อ๋อ สะดวกดีครับ เดี๋ยวแอดไลน์ไปดูข้อมูล ขอบคุณครับ", timestamp: new Date() },
-      { id: "h12", role: "assistant", content: "ยินดีให้บริการค่ะ หากต้อการข้อมูลเพิ่มเติมแจ้งน้องกัญญาได้ทุกเมื่อเลยนะคะ ขอประทานพรให้มีวันที่สุดวิเศษค่ะ", timestamp: new Date() }
+      { id: "h12", role: "assistant", content: "ยินดีให้บริการค่ะ หากต้องการข้อมูลเพิ่มเติมแจ้งน้องธันวาได้ทุกเมื่อเลยนะคะ ขอประทานพรให้มีวันที่สุดวิเศษค่ะ", timestamp: new Date() }
     ]
   }
 ];

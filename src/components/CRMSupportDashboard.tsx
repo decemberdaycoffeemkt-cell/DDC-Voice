@@ -171,7 +171,7 @@ export default function CRMSupportDashboard({
                       {currentlyTransferringTo === "technician" ? "🚨 กำลังสลับสายโอนหาช่างเทคนิคซ่อมกาแฟ" : "📈 กำลังโอนสายหาบาริสต้าฝ่ายขายเมล็ดกาแฟ"}
                     </h5>
                     <p className="text-[11px] leading-relaxed opacity-90">
-                      ระบบประมวลผลคำของน้องกัญญา/พี่ภู ตรวจจับได้ถึงความต้องการความช่วยเหลือเร่งด่วน โดยไม่ต้องวินิจฉัยซับซ้อน ได้ทำการรวบรวมแบบประเมินผู้รับ เพื่อเปลี่ยนสลับเข้าสายด่วนบาริสต้าฝ่าย{currentlyTransferringTo === "technician" ? "เทคนิคซ่อมแซม" : "ประเมินบาริสต้าฝ่ายคู่ค้า"}เรียบร้อย
+                      ระบบประมวลผลคำของน้องธันวา/พี่ภู ตรวจจับได้ถึงความต้องการความช่วยเหลือเร่งด่วน โดยไม่ต้องวินิจฉัยซับซ้อน ได้ทำการรวบรวมแบบประเมินผู้รับ เพื่อเปลี่ยนสลับเข้าสายด่วนบาริสต้าฝ่าย{currentlyTransferringTo === "technician" ? "เทคนิคซ่อมแซม" : "ประเมินบาริสต้าฝ่ายคู่ค้า"}เรียบร้อย
                     </p>
                   </div>
                 </motion.div>
@@ -313,7 +313,7 @@ export default function CRMSupportDashboard({
                     {selectedTicket.chatHistory.map((c, i) => (
                       <div key={i} className={`flex flex-col ${c.role === 'user' ? 'items-end' : 'items-start'}`}>
                         <span className="text-[9px] text-zinc-400 mb-0.5">
-                          {c.role === 'user' ? 'ลูกค้า' : (selectedTicket.gender === 'female' ? 'น้องกัญญา' : 'พี่ภู')}
+                          {c.role === 'user' ? 'ลูกค้า' : (selectedTicket.gender === 'female' ? 'น้องธันวา' : 'พี่ภู')}
                         </span>
                         <div className={`p-2 px-3 rounded-xl text-xs max-w-[90%] leading-normal ${c.role === 'user' ? 'bg-brand-green-light text-brand-green-dark font-medium' : 'bg-white border border-zinc-200 text-zinc-800'}`}>
                           {c.content}

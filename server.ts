@@ -3,6 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
+import { PRODUCTS } from "./src/data";
 
 dotenv.config();
 
@@ -70,6 +71,19 @@ app.post("/api/chat", async (req, res) => {
       });
     }
 
+    // Build a product catalog summary to teach the Gemini model all our real items dynamically
+    const coffeeBeansSummary = PRODUCTS.filter(p => p.category === "coffee_beans")
+      .map(p => `- ${p.name}: ${p.description.slice(0, 180)} (ราคา ${p.price}${p.wholesalePrice ? `, ${p.wholesalePrice}` : ""})`)
+      .join("\n");
+      
+    const ingredientsSummary = PRODUCTS.filter(p => p.category === "ingredients")
+      .map(p => `- ${p.name}: ${p.description.slice(0, 180)} (ราคา ${p.price}${p.wholesalePrice ? `, ${p.wholesalePrice}` : ""})`)
+      .join("\n");
+
+    const machinesSummary = PRODUCTS.filter(p => p.category === "machines")
+      .map(p => `- ${p.name}: ${p.description.slice(0, 180)} (ราคา ${p.price}${p.wholesalePrice ? `, ${p.wholesalePrice}` : ""})`)
+      .join("\n");
+
     // Set up Dynamic System Prompt based on selected Agent Gender
     const systemInstruction = `คุณคือ "AI Voice Agent" (ระบบตอบรับอัตโนมัติอัจฉริยะ) ของแบรนด์ "December Day Coffee" (บจก. ดีเซมเบอร์ เดย์ คอฟฟี่ - ผู้ผลิตและจำหน่ายเมล็ดกาแฟ เครื่องชงกาแฟ อุปกรณ์ และวัตถุดิบครบวงจร) ทำหน้าที่ต้อนรับลูกค้า ให้ข้อมูลเบื้องต้น ประสานงานรับปัญหาเทคนิค หรือการสั่งซื้อ และประสานงานส่งต่อช่างเทคนิคหรือฝ่ายขาย
 
@@ -88,8 +102,18 @@ app.post("/api/chat", async (req, res) => {
    - หากลูกค้าร้องขอสายพนักงานโดยตรง หรือพูดว่า "ขอคุยกับคน", "โอนสายพนักงาน", "ขอสายช่าง", "คุยกับช่าง" ให้ประสานโอนสายทันที ห้ามยื้อสายกวนใจลูกค้าเด็ดขาด
    - หาก AI ไม่เข้าใจลูกค้าหรือตอบผิดประเด็นเกิน 2 รอบ ให้ประสานงานโอนสายเพื่อช่วยเหลือทันที
 6. การให้ข้อมูลบริการและสินค้า:
-   - เมล็ดกาแฟ/วัตถุดิบ: ของเรามีเรตราคาส่งให้สำหรับร้านกาแฟ มีโปรโมชั่นพิเศษมากมาย ถามลูกค้าสั้นๆ ว่าสนใจเมล็ดคั่วอ่อน คั่วกลาง หรือเข้ม หรืออยากทราบรายละเอียดฟรีกดรับทาง Line OA ไหม
-   - เครื่องชงกาแฟ: เรานำเข้าเครื่องชงสเปกพรีเมี่ยม ทั้งเครื่องเล็กตั้งโต๊ะไปถึงเครื่องใหญ่สองหัวชงคุณภาพอิตาลี พร้อมจัดส่งและดูแลเครื่องให้ มีบริการหลังส่งยอดเยี่ยม ถามว่าลูกค้าเปิดร้านขนาดไหนอยู่
+   - เมล็ดกาแฟ/วัตถุดิบ: ตอบข้อมูลราคาส่งและรายละเอียดตามฐานข้อมูลสินค้าด้านล่างนี้อย่างถูกต้อง (พูดคุยสั้นๆ กระชับ ห้ามพูดลิสต์ยาว ให้เสนอส่งตารางราคายกลังทาง Line OA @decemberdaycoffee)
+   - เครื่องชงกาแฟ: แนะนำสเปกสั้นๆ ตามฐานข้อมูลสินค้าด้านล่างนี้อย่างถูกต้อง และสามารถโอนสายให้ฝ่ายขายสถาปนิกทำใบเสนอราคาให้ได้ด่วน
+
+7. ฐานข้อมูลสินค้าที่เป็นทางการของแบรนด์ (กรุณาใช้ข้อมูลนี้ตอบลูกค้าเรื่องราคา สเปก และคุณสมบัติ ห้ามเดาหรือเมคราคาขึ้นมาเองเด็ดขาด):
+[หมวดเมล็ดกาแฟ]
+${coffeeBeansSummary}
+
+[หมวดวัตถุดิบและผงชง]
+${ingredientsSummary}
+
+[หมวดเครื่องชงกาแฟ]
+${machinesSummary}
 
 รูปแบบการคุ้มครองข้อมูลเพื่อส่งออกเป็น JSON (สำคัญมาก):
 คุณต้องคืนการตอบกลับในรูปแบบ JSON วัตถุ และระบุฟิลด์เหล่านี้:

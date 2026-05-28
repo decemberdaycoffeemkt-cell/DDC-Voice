@@ -41,6 +41,88 @@ const getGeminiClient = (): GoogleGenAI => {
   return ai;
 };
 
+
+// Smart Dynamic Product RAG helper to inject matching catalog details in real-time (<1ms)
+const getRelevantProducts = (lastUserMsg: string): string => {
+  const query = lastUserMsg.toLowerCase().trim();
+  const matched: typeof PRODUCTS = [];
+  
+  const isMatch = (p: typeof PRODUCTS[0]) => {
+    const id = p.id.toLowerCase();
+    const name = p.name.toLowerCase();
+    const desc = p.description.toLowerCase();
+    
+    // Direct matches
+    if (query.includes(id) || query.includes(name)) return true;
+    
+    // Extracted short code match (e.g. "s4", "s5", "s3", "wpm", "romola" in query)
+    const tokens = query.split(/[\s,;./\-_()]/).filter(t => t.length > 0);
+    for (const token of tokens) {
+      if (token.length >= 2) {
+        if (id === token || id.startsWith(token + "-") || id.endsWith("-" + token) || id.includes("-" + token + "-")) {
+          return true;
+        }
+        const nameWords = name.split(/[\s,;./\-_()]/);
+        if (nameWords.includes(token)) {
+          return true;
+        }
+      }
+    }
+    
+    // Fallback search keywords
+    const keywordTriggers = ["peach", "blueberry", "cocoa", "thai tea", "green tea", "wpm", "romola", "canvas", "izensso", "milky"];
+    for (const kw of keywordTriggers) {
+      if (query.includes(kw) && (id.includes(kw) || name.includes(kw) || desc.includes(kw))) {
+        return true;
+      }
+    }
+    
+    return false;
+  };
+
+  for (const p of PRODUCTS) {
+    if (isMatch(p)) {
+      matched.push(p);
+    }
+  }
+
+  let selectedProducts = matched;
+  
+  if (selectedProducts.length === 0) {
+    // Curaetd popular fallback
+    const defaultIds = [
+      "s3-premium-blend", "s4-special-blend", "s5-premium-dark", 
+      "milky-lover", "colombia-peach", "t1-thai-tea-premium", 
+      "cocoa-premium", "product-003", "product-004"
+    ];
+    selectedProducts = PRODUCTS.filter(p => defaultIds.includes(p.id));
+  } else {
+    // Add alternatives
+    const topBeanIds = ["s5-premium-dark", "s3-premium-blend"];
+    const extraBeans = PRODUCTS.filter(p => topBeanIds.includes(p.id) && !selectedProducts.some(sp => sp.id === p.id));
+    selectedProducts = [...selectedProducts, ...extraBeans].slice(0, 12);
+  }
+
+  const beans = selectedProducts.filter(p => p.category === "coffee_beans")
+    .map(p => `- [เมล็ดกาแฟ] ${p.name} (รหัส: ${p.id}): ${p.description.split(" (จุดเด่น")[0]} (ราคา ${p.price})`)
+    .join("\n");
+
+  const ingredients = selectedProducts.filter(p => p.category === "ingredients")
+    .map(p => `- [วัตถุดิบอื่น] ${p.name} (รหัส: ${p.id}): ${p.description.split(" (จุดเด่น")[0]} (ราคา ${p.price})`)
+    .join("\n");
+
+  const machines = selectedProducts.filter(p => p.category === "machines")
+    .map(p => `- [เครื่องชงกาแฟ] ${p.name} (รหัส: ${p.id}): ${p.description.split(". เหมาะสำหรับ")[0]} (ราคา ${p.price})`)
+    .join("\n");
+
+  let summary = "";
+  if (beans) summary += `[หมวดเมล็ดกาแฟที่ค้นพบ]\n${beans}\n\n`;
+  if (ingredients) summary += `[หมวดผงชงและวัตถุดิบที่ค้นพบ]\n${ingredients}\n\n`;
+  if (machines) summary += `[หมวดเครื่องชงแนะนำที่ค้นพบ]\n${machines}\n`;
+
+  return summary || "ไม่มีข้อมูลสินค้าที่ตรงกับคำค้นหาโดยตรง สามารถแอดไลน์ @decemberdaycoffee เพื่อสอบถามแคตตาล็อกเต็มค่ะ";
+};
+
 // API: Handle AI Voice Agent Chat
 app.post("/api/chat", async (req, res) => {
   try {
@@ -106,21 +188,10 @@ app.post("/api/chat", async (req, res) => {
       });
     }
 
-    // Curated dynamic lists to keep the prompt compact, blazing fast (<1s response), and highly accurate
-    const selectedBeanIds = ["s5-premium-dark", "s3-premium-blend", "milky-lover", "colombia-blueberry", "colombia-peach"];
-    const coffeeBeansSummary = PRODUCTS.filter(p => p.category === "coffee_beans" && selectedBeanIds.includes(p.id))
-      .map(p => `- ${p.name}: ${p.description.split(" (จุดเด่น")[0]} (ราคา ${p.price})`)
-      .join("\n");
-      
-    const selectedIngredIds = ["t1-thai-tea-premium", "g1-green-tea-premium", "jasmine-green-tea", "cocoa-premium"];
-    const ingredientsSummary = PRODUCTS.filter(p => p.category === "ingredients" && selectedIngredIds.includes(p.id))
-      .map(p => `- ${p.name}: ${p.description.split(" (จุดเด่น")[0]} (ราคา ${p.price})`)
-      .join("\n");
-
-    const selectedMachineIds = ["product-003", "product-004", "product-006"]; // WPM KD-270 SN, ROMOLA CANVAS, IZENSSO 1-3089
-    const machinesSummary = PRODUCTS.filter(p => p.category === "machines" && selectedMachineIds.includes(p.id))
-      .map(p => `- ${p.name}: ${p.description.split(". เหมาะสำหรับ")[0]} (ราคา ${p.price})`)
-      .join("\n");
+        // Dynamically retrieve relevant catalog context based on caller's last message (Smart RAG)
+    const lastUserMsg = messages[messages.length - 1]?.content || "";
+    const relevantProductsSummary = getRelevantProducts(lastUserMsg);      
+    
 
     // Set up Dynamic System Prompt for strictly Nong Thanwa (Female Agent)
     const systemInstruction = `คุณคือ "AI Voice Agent" (ระบบตอบรับอัตโนมัติอัจฉริยะ) ของแบรนด์ "December Day Coffee" (บจก. ดีเซมเบอร์ เดย์ คอฟฟี่ - ผู้ผลิตและจำหน่ายเมล็ดกาแฟ เครื่องชงกาแฟ อุปกรณ์ และวัตถุดิบครบวงจร) ทำหน้าที่ต้อนรับลูกค้า ให้ข้อมูลเบื้องต้น ประสานงานรับปัญหาเทคนิค หรือการสั่งซื้อ และประสานงานส่งต่อช่างเทคนิคหรือฝ่ายขาย
@@ -152,16 +223,8 @@ app.post("/api/chat", async (req, res) => {
    - เมล็ดกาแฟ/วัตถุดิบ: แนะนำตัวเด่นๆ 2-3 ตัวจากด้านล่าง (พูดสั้นๆ กระชับ ห้ามท่องลิสต์ยาว) และแนะนำว่าสั่งซื้อเมล็ดกาแฟผ่านเว็บไซต์หลักได้ที่ https://www.decemberdaycoffee.com/category/2475/coffee-beans#SECTION_PAGE หรือแอดไลน์ขอตารางราคายกลังที่ Line OA: @decemberdaycoffee (ลิงก์: https://lin.ee/Qqn7rkn)
    - เครื่องชงกาแฟ: แนะนำเครื่องชงกาแฟ 1-2 รุ่นด้านล่าง และเสนอให้ฝ่ายขายจัดทำใบเสนอราคาให้
 
-6. รายการสินค้าเด่นของแบรนด์ (SHOWCASE PRODUCTS):
-[หมวดเมล็ดกาแฟยอดนิยม]
-${coffeeBeansSummary}
-(หมายเหตุ: เรามีเมล็ดกาแฟอีกกว่า 100 รายการ สามารถแอดไลน์ @decemberdaycoffee เพื่อรับแคตตาล็อกตัวเต็มได้ค่ะ/ครับ)
-
-[หมวดผงชงและวัตถุดิบยอดนิยม]
-${ingredientsSummary}
-
-[หมวดเครื่องชงกาแฟแนะนำ]
-${machinesSummary}
+6. รายการรายละเอียดสินค้าและราคาที่เป็นทางการของแบรนด์ที่เกี่ยวข้องกับความต้องการของลูกค้า (ลูกค้าถามตัวไหน ให้อ้างอิงราคาและข้อมูลจากตรงนี้ ห้ามแต่งข้อมูลขึ้นมาเองเด็ดขาดค่ะ):
+${relevantProductsSummary}
 
 รูปแบบการคุ้มครองข้อมูลเพื่อส่งออกเป็น JSON (สำคัญมาก):
 คุณต้องคืนการตอบกลับในรูปแบบ JSON วัตถุ และระบุฟิลด์เหล่านี้:

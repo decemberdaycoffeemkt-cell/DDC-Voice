@@ -81,6 +81,13 @@ export default function App() {
     issueDescription: null
   });
   const [currentlyTransferringTo, setCurrentlyTransferringTo] = useState<"sales" | "technician" | "none">("none");
+  const [isWidgetMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("widget") === "true";
+    }
+    return false;
+  });
 
   // Handle Transfer completed
   const handleTransferTriggered = (dept: "sales" | "technician", notes: string) => {
@@ -250,6 +257,27 @@ export default function App() {
       }
     }
   };
+
+  if (isWidgetMode) {
+    return (
+      <div className="h-screen w-screen bg-white overflow-hidden">
+        <PhoneCallSimulator
+          gender={gender}
+          setGender={setGender}
+          callState={callState}
+          setCallState={handleCallStateChange}
+          chatHistory={chatHistory}
+          setChatHistory={setChatHistory}
+          extractedInfo={extractedInfo}
+          setExtractedInfo={setExtractedInfo}
+          onTransferTriggered={handleTransferTriggered}
+          activeTab="call"
+          setActiveTab={() => {}}
+          isWidget={true}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFBF9] text-zinc-800 font-sans antialiased pb-12 selection:bg-brand-green-light selection:text-brand-green-dark scroll-smooth">

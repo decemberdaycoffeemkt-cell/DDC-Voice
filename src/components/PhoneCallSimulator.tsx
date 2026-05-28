@@ -18,6 +18,7 @@ interface PhoneCallSimulatorProps {
   onTransferTriggered: (dept: "sales" | "technician", notes: string) => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  isWidget?: boolean;
 }
 
 const PRESET_PROMPTS = [
@@ -109,7 +110,8 @@ export default function PhoneCallSimulator({
   setExtractedInfo,
   onTransferTriggered,
   activeTab,
-  setActiveTab
+  setActiveTab,
+  isWidget = false
 }: PhoneCallSimulatorProps) {
   const [inputText, setInputText] = useState("");
   const [isMuted, setIsMuted] = useState(false);
@@ -409,7 +411,10 @@ export default function PhoneCallSimulator({
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-zinc-200/80 shadow-2xl overflow-hidden flex flex-col h-[650px] relative">
+    <div className={isWidget 
+      ? "bg-white overflow-hidden flex flex-col h-full w-full relative"
+      : "bg-white rounded-3xl border border-zinc-200/80 shadow-2xl overflow-hidden flex flex-col h-[650px] relative"
+    }>
       
       {/* Device Header */}
       <div className="bg-brand-green-dark px-6 py-4 flex justify-between items-center text-white">

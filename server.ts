@@ -50,11 +50,11 @@ app.post("/api/chat", async (req, res) => {
       const isIssue = /พัง|เสีย|ใช้ไม่ได้|น้ำไม่ไหล|ร้อน/.test(lastMessage);
       
       const replyTheme = gender === "female" ? "ค่ะ" : "ครับ";
-      let replyText = `สวัสดี${replyTheme} เจ้าน้องกัญญาจำลองยินดีให้บริการค่ะ สำหรับการจองสินค้าหรือเมล็ดกาแฟ สามารถแจ้งเพิ่มเติมได้เลยช่องทางนี้นะคะ/ครับ`;
+      let replyText = `สวัสดี${replyTheme} น้องกัญญาจำลองยินดีให้บริการค่ะ หากสนใจเมล็ดกาแฟราคาส่ง แอดไลน์ @decemberdaycoffee ได้เลยนะคะ หรือต้องการแจ้งปัญหากดเริ่มสายจำลองได้เลยค่ะ`;
       if (isTransferRequested) {
-        replyText = `รับทราบและเข้าใจแล้ว${replyTheme} เดี๋ยวขอกดโอนสายไปยังช่างเทคนิคดูแลด่วนเลยนะคะ/ครับ กรุณารอสักครู่เดียวค่ะ/ครับ`;
+        replyText = `รับทราบและเข้าใจแล้ว${replyTheme} เดี๋ยวขอกดโอนสายไปยังคุณขวัญที่เบอร์ 096-163-1456 เพื่อดูแลให้ด่วนเลยนะคะ/ครับ กรุณารอสักครู่เดียวค่ะ/ครับ`;
       } else if (isIssue) {
-        replyText = `อุ๊ย ต้องขอประทานโทษด้วย${replyTheme} เดี๋ยวจะรีบโอนสายแจ้งเรื่องเครื่องชงขัดข้องให้คุณช่างเทคนิคช่วยเหลือ ณ บัดนี้เลยค่ะ/ครับ ขออนุญาตแจ้งโอนสายนะคะ/ครับ`;
+        replyText = `อุ๊ย ต้องขอประทานโทษด้วย${replyTheme} เดี๋ยวจะรีบโอนสายแจ้งเรื่องเครื่องชงขัดข้องให้คุณขวัญช่วยเหลือจัดส่งทีมช่างเทคนิคให้ด่วน ณ บัดนี้เลยค่ะ/ครับ ขออนุญาตแจ้งโอนสายนะคะ/ครับ`;
       }
       
       return res.json({
@@ -62,9 +62,9 @@ app.post("/api/chat", async (req, res) => {
         transferTriggered: isTransferRequested || isIssue,
         transferDepartment: isIssue ? "technician" : (isTransferRequested ? "sales" : "none"),
         extractedInfo: {
-          customerName: "ลูกค้าจำลอง (แบบไม่มีคีย์)",
+          customerName: "คุณขวัญ (เจ้าของแบรนด์)",
           shopName: "ร้านกาแฟชั่วคราว",
-          phone: "081-111-1111",
+          phone: "096-163-1456",
           issueDescription: lastMessage || "สอบถามข้อมูลทั่วไป"
         }
       });

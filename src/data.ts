@@ -114,7 +114,7 @@ export const HISTORIC_TICKETS: SupportTicket[] = [
     timestamp: new Date(Date.now() - 3600000 * 24), // 24 hours ago
     chatHistory: [
       { id: "h9", role: "user", content: "อยากเห็นหน้าสเปกตัวชาเขียวอูจิมัทฉะครับว่ามีขนาดยังไงบ้าง", timestamp: new Date() },
-      { id: "h10", role: "assistant", content: "สำหรับชาเขียวอุจิมัทฉะ เกรดพิธีการ ของเราแชร์รูปภาพและรายละเอียดส่วนประกอบทั้งหมดผ่าน Line OA @decemberday ได้ทันทีเลยค่ะ สนใจรับช่องทางนี้ไหมคะ", timestamp: new Date() },
+      { id: "h10", role: "assistant", content: "สำหรับชาเขียวอุจิมัทฉะ เกรดพิธีการ ของเราแชร์รูปภาพและรายละเอียดส่วนประกอบทั้งหมดผ่าน Line OA @decemberdaycoffee ได้ทันทีเลยค่ะ สนใจรับช่องทางนี้ไหมคะ", timestamp: new Date() },
       { id: "h11", role: "user", content: "อ๋อ สะดวกดีครับ เดี๋ยวแอดไลน์ไปดูข้อมูล ขอบคุณครับ", timestamp: new Date() },
       { id: "h12", role: "assistant", content: "ยินดีให้บริการค่ะ หากต้อการข้อมูลเพิ่มเติมแจ้งน้องกัญญาได้ทุกเมื่อเลยนะคะ ขอประทานพรให้มีวันที่สุดวิเศษค่ะ", timestamp: new Date() }
     ]
